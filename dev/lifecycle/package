@@ -1,0 +1,68 @@
+#!/bin/bash
+
+set -eu
+trap exit INT TERM
+
+dist="packaging/bin"
+targets=("linux/amd64")
+
+package_service() {
+  local arch=${2#*/}
+  local platform=${2%%/*}
+  local output=${1}/${platform}-${arch}
+  if [ -f ${output} ] ; then
+    rm -f ${output}
+  fi
+
+  echo "[info] packaging for ${platform}/${arch}"
+
+  GOOS=${platform} \
+  GOARCH=${arch} \
+  CGO_ENABLED=0 \
+  \
+  go build -a -o ${output} || {
+    (>&2 echo "unable to build for ${platform}/${arch}")
+    exit 1
+  }
+
+  chmod +x ${output}
+}
+
+while [ $# -gt 0 ] ; do
+key="$1"
+
+case $key in
+
+    --target)
+      targets=($(sed "s/,/ /g" <<< "$2"))
+      shift
+      shift
+      ;;
+
+    -o|--output)
+      dist="$2"
+      shift
+      shift
+      ;;
+
+    *)
+      shift
+      ;;
+
+esac
+done
+
+
+echo "[info] cleaning"
+go clean
+
+for target in ${targets[@]} ; do
+  package_service ${dist} ${target}
+done
+
+if [ ! -f ${dist}/linux-amd64 ] ; then
+  (>&2 echo "[error] ${dist}/linux-amd64 not found")
+  exit 1
+fi
+
+echo "[info] done"

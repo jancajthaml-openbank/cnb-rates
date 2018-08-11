@@ -1,0 +1,215 @@
+version: 2
+
+# ---------------------------------------------------------------------------- #
+
+workflows:
+
+  version: 2
+
+  commit:
+    jobs:
+      - setup:
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(-.+)?/
+      - test:
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(-.+)?/
+      - build:
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(-.+)?/
+      - package:
+          requires:
+            - build
+            - test
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(-.+)?/
+      - bbtest:
+          requires:
+            - package
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(-.+)?/
+      - release:
+          requires:
+            - bbtest
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(-.+)?/
+            branches:
+              ignore: /.*/
+
+  rolling:
+    triggers:
+      - schedule:
+          cron: "0 * * * *"
+          filters:
+            branches:
+              only: master
+    jobs:
+      - bbtest
+
+# ---------------------------------------------------------------------------- #
+
+jobs:
+
+  # -------------------------------------------------------------------------- #
+
+  setup:
+    docker:
+      - image: docker:17.09.0-ce-git
+        environment:
+          - LANG: C.UTF-8
+          - GOARCH: amd64
+          - GOOS: linux
+          - GOBIN: /usr/lib/go/bin/go
+    working_directory: /go/src/github.com/jancajthaml-openbank/cnb-rates
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: docker build -t openbankdev/cnb-rates_bbtest ./bbtest
+      - run: docker build -t openbankdev/cnb-rates_base ./dev
+      - run: docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
+      - deploy:
+          name: Push dev docker images to DockerHUB
+          command: |
+            upload_to_docker_hub() {
+              docker tag ${1} "${1}:latest"
+              docker push "${1}:latest"
+            }
+
+            upload_to_docker_hub openbankdev/cnb-rates_bbtest &
+            upload_to_docker_hub openbankdev/cnb-rates_base &
+            wait
+      - save_cache:
+          key: cnb-rates-base-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_TAG }}
+          paths:
+            - /go/src/github.com/jancajthaml-openbank/cnb-rates
+
+  # -------------------------------------------------------------------------- #
+
+  test:
+    docker:
+      - image: openbankdev/cnb-rates_base
+    working_directory: /go/src/github.com/jancajthaml-openbank/cnb-rates
+    steps:
+      - restore_cache:
+          keys:
+            - cnb-rates-base-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_TAG }}
+      - run: dep ensure
+      - run: go test -v ./... -benchmem -bench=. -timeout=20s
+
+  # -------------------------------------------------------------------------- #
+
+  build:
+    docker:
+      - image: openbankdev/cnb-rates_base
+    working_directory: /go/src/github.com/jancajthaml-openbank/cnb-rates
+    steps:
+      - restore_cache:
+          keys:
+            - cnb-rates-base-{{ .Environment.CIRCLE_SHA1 }}
+      - run: dep ensure
+      - run: ./dev/lifecycle/package --target linux,darwin --arch amd64,arm
+      - save_cache:
+          key: cnb-rates-binaries-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_TAG }}
+          paths:
+            - /go/src/github.com/jancajthaml-openbank/cnb-rates
+
+  # -------------------------------------------------------------------------- #
+
+  package:
+    docker:
+      - image: openbankdev/cnb-rates_base
+    working_directory: /go/src/github.com/jancajthaml-openbank/cnb-rates
+    steps:
+      - setup_remote_docker
+      - restore_cache:
+          keys:
+            - cnb-rates-binaries-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_TAG }}
+      - run: if [ ! -f ./packaging/bin/linux-amd64 ] ; then exit 1 ; fi
+      - run: docker build -t openbank/cnb-rates .
+      - run: docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
+      - deploy:
+          name: Push snapshot docker images to DockerHUB
+          command: |
+
+            if [ -z ${CIRCLE_TAG} ] ; then
+              VERSION=$(sed 's:.*/::' <<< ${CIRCLE_BRANCH})
+              echo "snapshot ${VERSION}"
+
+              docker tag openbank/cnb-rates openbank/cnb-rates:${VERSION}
+              docker push openbank/cnb-rates:${VERSION}
+
+            else
+              VERSION=${CIRCLE_TAG}
+              echo "release ${VERSION}"
+
+              docker tag openbank/cnb-rates openbank/cnb-rates:${VERSION}
+              docker push openbank/cnb-rates:${VERSION}
+
+              docker tag openbank/cnb-rates openbank/cnb-rates:latest
+              docker push openbank/cnb-rates:latest
+            fi
+
+  # -------------------------------------------------------------------------- #
+
+  bbtest:
+    machine: true
+    working_directory: /home/circleci/project
+    steps:
+      - checkout
+      - run:
+          name: Run blackbox tests
+          command: |
+            pull() {
+              echo "pulling ${1}:${2}"
+              docker pull ${1}:${2}
+            }
+
+            if [ -z ${CIRCLE_TAG} ] ; then
+              VERSION=$(sed 's:.*/::' <<< ${CIRCLE_BRANCH})
+            else
+              VERSION=${CIRCLE_TAG}
+            fi
+
+            pull openbank/cnb-rates ${VERSION} & \
+            pull openbankdev/cnb-rates_bbtest latest & \
+            wait
+
+            VERSION=${VERSION} docker-compose run --rm bbtest
+      - store_test_results:
+          path: /home/circleci/project/bbtest
+      - store_artifacts:
+          path: /home/circleci/project/reports
+          destination: reports
+
+  # -------------------------------------------------------------------------- #
+
+  release:
+
+    docker:
+      - image: openbankdev/cnb-rates_base
+
+    working_directory: /go/src/github.com/jancajthaml-openbank/cnb-rates
+
+    steps:
+      - setup_remote_docker
+      - restore_cache:
+          keys:
+            - cnb-rates-binaries-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_TAG }}
+      - run: ls -al packaging/bin
+      - run: if [ ! -f ./packaging/bin/linux-amd64 ] ; then exit 1 ; fi
+      - deploy:
+          name: Release artifacts to github
+          command: |
+            ./dev/lifecycle/release -v ${CIRCLE_TAG} -t ${GITHUB_RELEASE_TOKEN}
+
+# ---------------------------------------------------------------------------- #

@@ -1,0 +1,66 @@
+require 'turnip/rspec'
+require 'json'
+require 'thread'
+require 'timeout'
+
+Thread.abort_on_exception = true
+
+RSpec.configure do |config|
+  config.raise_error_for_unimplemented_steps = true
+  config.color = true
+
+  Dir.glob("./helpers/*_helper.rb") { |f| load f }
+  config.include EventuallyHelper, :type => :feature
+  config.include DeadlineHelper, :type => :feature
+  Dir.glob("./steps/*_steps.rb") { |f| load f, true }
+
+  config.before(:suite) do |_|
+    print "[ suite starting ]\n"
+
+    ["/data", "/metrics", "/reports"].each { |folder|
+      FileUtils.mkdir_p folder
+      FileUtils.rm_rf Dir.glob("#{folder}/*")
+    }
+
+    $wall_instance_counter = 0
+    $tenant_id = nil
+
+    print "[ suite started  ]\n"
+  end
+
+  config.after(:suite) do |_|
+    print "\n[ suite ending   ]\n"
+
+    get_containers = lambda do |image|
+      containers = %x(docker ps -a | awk '{ print $1,$2 }' | grep #{image} | awk '{print $1 }' 2>/dev/null)
+      return ($? == 0 ? containers.split("\n") : [])
+    end
+
+    teardown_container = lambda do |container|
+      label = %x(docker inspect --format='{{.Name}}' #{container})
+      label = ($? == 0 ? label.strip : container)
+
+      %x(docker kill --signal="TERM" #{container} >/dev/null 2>&1 || :)
+      %x(docker logs #{container} >/reports/#{label}.log 2>&1)
+      %x(docker rm -f #{container} &>/dev/null || :)
+    end
+
+    begin
+      Timeout.timeout(20) do
+        get_containers.call("openbank/cnb-rates").each { |container|
+          teardown_container.call(container)
+        }
+      end
+    rescue Timeout::Error
+      #
+    end
+
+    FileUtils.cp_r '/metrics/.', '/reports'
+    ["/data", "/metrics"].each { |folder|
+      FileUtils.rm_rf Dir.glob("#{folder}/*")
+    }
+
+    print "[ suite ended    ]"
+  end
+
+end
