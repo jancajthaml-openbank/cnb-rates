@@ -1,0 +1,121 @@
+version: '2'
+
+# ---------------------------------------------------------------------------- #
+
+services:
+
+  # -------------------------------------------------------------------------- #
+
+  go:
+    build:
+      dockerfile: dev/Dockerfile
+      context: .
+    image: openbankdev/cnb-rates-base
+    volumes:
+      - ./dev/lifecycle:/opt/lifecycle
+      - .:/go/src/github.com/jancajthaml-openbank/cnb-rates
+    working_dir: /go/src/github.com/jancajthaml-openbank/cnb-rates
+    environment:
+      - GOOS
+      - GOARCH
+      - GOPATH=/go
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ["go"]
+    privileged: true
+
+  # -------------------------------------------------------------------------- #
+
+  service:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    image: openbank/cnb-rates
+    restart: "no"
+
+  # -------------------------------------------------------------------------- #
+
+  sync:
+    extends: go
+    entrypoint: ["dep"]
+    command: ["ensure"]
+
+  # -------------------------------------------------------------------------- #
+
+  init:
+    extends: go
+    entrypoint: ["dep"]
+    command: ["init"]
+
+  # -------------------------------------------------------------------------- #
+
+  update:
+    extends: go
+    entrypoint: ["dep"]
+    command: ["ensure", "-update"]
+
+  # -------------------------------------------------------------------------- #
+
+  fetch:
+    extends: go
+    entrypoint: ["dep"]
+    command: ["ensure", "-add", "github.com/logrusorgru/aurora"]
+
+  # -------------------------------------------------------------------------- #
+
+  lint:
+    extends: go
+    entrypoint: ["/opt/lifecycle/lint"]
+
+  # -------------------------------------------------------------------------- #
+
+  package:
+    extends: go
+    entrypoint: ["/opt/lifecycle/package"]
+    command: ["-t", "linux"]
+
+  # -------------------------------------------------------------------------- #
+
+  test:
+    extends: go
+    command: ["test", "-v", "./...", "-timeout=20s"]
+
+  # -------------------------------------------------------------------------- #
+
+  bbtest:
+    build:
+      context: .
+      dockerfile: bbtest/Dockerfile
+    image: openbankdev/cnb-rates_bbtest
+    ports:
+      - "5562"
+      - "5561"
+    working_dir: /opt/bbtest
+    environment:
+      - PERSISTENCE_PATH=/data
+      - COMPOSE_PROJECT_NAME
+      - VERSION
+    volumes:
+      - ./reports:/reports
+      - journal:/data
+      - metrics:/metrics
+      - ./bbtest:/opt/bbtest
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers
+
+  # -------------------------------------------------------------------------- #
+
+  bench:
+    extends: go
+    environment:
+      - GOMAXPROCS=1
+    command: ["test", "-v", "./...", "-benchmem", "-bench=.", "-timeout=20s"]
+
+# ---------------------------------------------------------------------------- #
+
+volumes:
+  journal:
+    driver: local
+  metrics:
+    driver: local
+
+# ---------------------------------------------------------------------------- #
