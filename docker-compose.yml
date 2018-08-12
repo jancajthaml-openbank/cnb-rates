@@ -21,7 +21,6 @@ services:
       - GOPATH=/go
       - COMPOSE_PROJECT_NAME
     entrypoint: ["go"]
-    privileged: true
 
   # -------------------------------------------------------------------------- #
 
@@ -75,9 +74,23 @@ services:
 
   # -------------------------------------------------------------------------- #
 
+  release:
+    extends: go
+    entrypoint: ["/opt/lifecycle/release"]
+
+  # -------------------------------------------------------------------------- #
+
+  debian:
+    extends: go
+    entrypoint: ["/opt/lifecycle/debian"]
+
+  # -------------------------------------------------------------------------- #
+
   test:
     extends: go
-    command: ["test", "-v", "./...", "-timeout=20s"]
+    environment:
+      - GOMAXPROCS=1
+    command: ["test", "-v", "./...", "-benchmem", "-bench=.", "-timeout=20s"]
 
   # -------------------------------------------------------------------------- #
 
@@ -86,29 +99,15 @@ services:
       context: .
       dockerfile: bbtest/Dockerfile
     image: openbankdev/cnb-rates_bbtest
-    ports:
-      - "5562"
-      - "5561"
     working_dir: /opt/bbtest
     environment:
-      - PERSISTENCE_PATH=/data
       - COMPOSE_PROJECT_NAME
       - VERSION
     volumes:
-      - ./reports:/reports
-      - journal:/data
-      - metrics:/metrics
+      - ./reports/logs:/reports
       - ./bbtest:/opt/bbtest
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers:/var/lib/docker/containers
-
-  # -------------------------------------------------------------------------- #
-
-  bench:
-    extends: go
-    environment:
-      - GOMAXPROCS=1
-    command: ["test", "-v", "./...", "-benchmem", "-bench=.", "-timeout=20s"]
 
 # ---------------------------------------------------------------------------- #
 

@@ -1,4 +1,0 @@
-
-step "noop" do ||
-
-end

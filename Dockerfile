@@ -12,12 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM library/alpine:latest
+FROM debian:stretch AS base
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8
+
+RUN apt-get update -y && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends apt-utils
+
+# ---------------------------------------------------------------------------- #
+
+FROM base
 
 MAINTAINER Jan Cajthaml <jan.cajthaml@gmail.com>
 
-COPY packaging/bin/linux-amd64 /linux-amd64
+RUN apt-get -y install --allow-downgrades --no-install-recommends \
+    \
+      rsyslog=8.24.0-1 \
+      libsystemd0>=232-25 \
+      systemd>=232-25 \
+    && \
+    apt-get clean && \
+    sed -i '/imklog/{s/^/#/}' /etc/rsyslog.conf
+
+COPY packaging/params.conf /etc/init/cnb-rates.conf
+
+COPY packaging/bin /tmp/packages
+
+RUN find /tmp/packages -type f -name 'cnb-rates_*_amd64.deb' -exec apt-get -y install --no-install-recommends -f \{\} \; && \
+    rm -rf /tmp/packages
 
 STOPSIGNAL SIGTERM
 
-ENTRYPOINT ["/entrypoint"]
+ENTRYPOINT ["/lib/systemd/systemd"]
