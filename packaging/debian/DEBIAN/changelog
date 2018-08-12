@@ -1,0 +1,5 @@
+lake (v0.0.0+debian-package) unstable; urgency=low
+
+  * includes package commits after v0.0.0+debian release
+
+ -- Jan Cajthaml <jan.cajthaml@gmail.com>  Sun, 12 Aug 2018 13:07:03 +0200

@@ -17,56 +17,95 @@ package main
 import (
 	"os"
 	"os/signal"
-	"sort"
 	"syscall"
 
-	"github.com/codegangsta/cli"
-	"github.com/jancajthaml-openbank/cnb-rates/commands"
-	"github.com/sirupsen/logrus"
+	"bufio"
+	"strings"
+	"sync"
+
+	log "github.com/sirupsen/logrus"
+
+	"github.com/spf13/viper"
+
+	"github.com/jancajthaml-openbank/cnb-rates/pkg/cnb"
+	"github.com/jancajthaml-openbank/cnb-rates/pkg/utils"
 )
 
-func main() {
-	app := cli.NewApp()
-	app.Name = "cnb-rates"
-	app.Author = "Jan Cajthaml <jan.cajthaml@gmail.com>"
-	app.Usage = "CNB daily exchange rate importer"
+func init() {
+	viper.SetEnvPrefix("CNB_RATES")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
 
-	app.Flags = commands.GlobalFlags()
-	app.Commands = commands.All()
-	app.CommandNotFound = commands.NotFound
+	viper.SetDefault("log.level", "DEBUG")
+	viper.SetDefault("storage", "/data")
+	viper.SetDefault("sync.rate", "1m")
 
-	app.Before = beforeHook
-	app.After = afterHook
+	log.SetFormatter(new(utils.LogFormat))
+}
 
-	sort.Sort(cli.FlagsByName(app.Flags))
-	sort.Sort(cli.CommandsByName(app.Commands))
+func validParams(params utils.RunParams) bool {
 
-	if err := app.Run(os.Args); err != nil {
-		os.Exit(1)
+	if os.MkdirAll(params.RootStorage, os.ModePerm) != nil {
+		log.Error("unable to assert storage directory")
+		return false
+	}
+
+	return true
+}
+
+func loadParams() utils.RunParams {
+	return utils.RunParams{
+		RootStorage: viper.GetString("storage"),
+		Log:         viper.GetString("log"),
+		LogLevel:    viper.GetString("log.level"),
+		SyncRate:    viper.GetDuration("sync.rate"),
 	}
 }
 
-func beforeHook(c *cli.Context) error {
-	setLogLevel(c)
+func main() {
+	log.Print(">>> Setup <<<")
+
+	params := loadParams()
+	if !validParams(params) {
+		return
+	}
+
+	if params.Log == "" {
+		log.SetOutput(os.Stdout)
+	} else if file, err := os.OpenFile(params.Log, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644); err == nil {
+		defer file.Close()
+		log.SetOutput(bufio.NewWriter(file))
+	} else {
+		log.SetOutput(os.Stdout)
+		log.Warnf("Unable to create %s: %v", params.Log, err)
+	}
+
+	if level, err := log.ParseLevel(params.LogLevel); err == nil {
+		log.Printf("Log level set to %v", strings.ToUpper(params.LogLevel))
+		log.SetLevel(level)
+	} else {
+		log.Warnf("Invalid log level %v, using level WARN", params.LogLevel)
+		log.SetLevel(log.WarnLevel)
+	}
+
 	exitSignal := make(chan os.Signal, 1)
 	signal.Notify(exitSignal, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-exitSignal
-		afterHook(nil)
-		os.Exit(2)
-	}()
 
-	return nil
-}
+	log.Print(">>> Starting <<<")
 
-func afterHook(c *cli.Context) error {
-	return nil
-}
+	var wg sync.WaitGroup
 
-func setLogLevel(c *cli.Context) {
-	if c.GlobalBool("verbose") {
-		logrus.SetLevel(logrus.DebugLevel)
-	} else {
-		logrus.SetLevel(logrus.InfoLevel)
-	}
+	terminationChan := make(chan struct{})
+	wg.Add(1)
+	go cnb.SynchronizeRates(&wg, terminationChan, params)
+
+	log.Print(">>> Started <<<")
+
+	<-exitSignal
+
+	log.Print(">>> Terminating <<<")
+	close(terminationChan)
+	wg.Wait()
+
+	log.Print(">>> Terminated <<<")
 }

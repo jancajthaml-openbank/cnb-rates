@@ -33,21 +33,20 @@ import (
 
 type CNB struct {
 	exchangeRateFixing string
-	//cacheRoot          string
 	fxMainDailyPath    string
 	fxMainYearlyPath   string
 	fxOtherMonthlyPath string
 	client             *httpclient.HttpClient
 }
 
-func New(cacheDirectory string) *CNB {
+func New(cacheDirectory string) (error, *CNB) {
 	if cacheDirectory == "" {
-		cacheDirectory = "/data"
+		return fmt.Errorf("persistent directory cannot be empty"), nil
 	}
 
 	absPath, err := filepath.Abs(cacheDirectory)
 	if err != nil {
-		panic(fmt.Sprintf("invalid root storage path: %s", err.Error()))
+		return fmt.Errorf("invalid root storage path: %s", err.Error()), nil
 	}
 
 	cacheDirectory = absPath
@@ -57,18 +56,18 @@ func New(cacheDirectory string) *CNB {
 	fxOtherMonthlyPath := cacheDirectory + "/raw/monthly"
 
 	if err := os.MkdirAll(fxMainDailyPath, os.ModePerm); err != nil {
-		panic(fmt.Sprintf("could not assert storage: %s", err.Error()))
+		return fmt.Errorf("could not assert storage: %s", err.Error()), nil
 	}
 
 	if err := os.MkdirAll(fxOtherMonthlyPath, os.ModePerm); err != nil {
-		panic(fmt.Sprintf("could not assert storage: %s", err.Error()))
+		return fmt.Errorf("could not assert storage: %s", err.Error()), nil
 	}
 
 	if err := os.MkdirAll(fxMainYearlyPath, os.ModePerm); err != nil {
-		panic(fmt.Sprintf("could not assert storage: %s", err.Error()))
+		return fmt.Errorf("could not assert storage: %s", err.Error()), nil
 	}
 
-	return &CNB{
+	return nil, &CNB{
 		exchangeRateFixing: "https://www.cnb.cz/en/financial_markets/foreign_exchange_market",
 		client:             httpclient.New(),
 		fxMainDailyPath:    fxMainDailyPath,
