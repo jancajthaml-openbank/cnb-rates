@@ -1,9 +1,0 @@
-Package: cnb-rates
-Version: 0.0.0+debian-package
-Architecture: amd64
-Maintainer: Jan Cajthaml <jan.cajthaml@gmail.com>
-Depends: init-system-helpers (>= 1.18~)
-Section: openbank
-Priority: extra
-Vcs-Git: git@github.com:jancajthaml-openbank/cnb-rates.git
-Description: Openbank messaging relay

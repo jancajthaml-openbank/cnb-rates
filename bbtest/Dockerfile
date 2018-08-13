@@ -24,7 +24,8 @@ RUN gem install \
         rspec-instafail:1.0.0 \
         excon:0.61.0 \
         bigdecimal:1.3.4 \
-        byebug:10.0.1
+        byebug:10.0.1 \
+        agoo:2.5.0
 
 COPY --from=library/docker:18.06 /usr/local/bin/docker /usr/bin/docker
 

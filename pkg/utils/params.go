@@ -18,6 +18,8 @@ import "time"
 
 // RunParams is a structure of application parameters
 type RunParams struct {
+	// Gateway represents CNB Cloud server
+	Gateway string
 	// Log represents log output
 	Log string
 	// LogLevel ignorecase log level

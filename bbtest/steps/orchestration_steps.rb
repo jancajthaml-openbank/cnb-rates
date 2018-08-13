@@ -9,7 +9,6 @@ step "no :container :label is running" do |container, label|
 
   ids.each { |id|
     eventually(timeout: 2) {
-      puts "wanting to kill #{id}"
       send ":container running state is :state", id, false
 
       label = %x(docker inspect --format='{{.Name}}' #{id})
@@ -80,6 +79,18 @@ step "cnb-rates is running" do ||
   }
 end
 
+step "cnb-rates is running with mocked CNB Gateway" do ||
+  my_id = %x(cat /etc/hostname).strip
+  params = [
+    "CNB_RATES_STORAGE=/data",
+    "CNB_RATES_LOG_LEVEL=INFO",
+    "CNB_RATES_SYNC_RATE=10s",
+    "CNB_RATES_GATEWAY=http://#{my_id}:8080"
+  ].join("\n")
+
+  send "cnb-rates is running with following configuration", params
+end
+
 step "cnb-rates is running with following configuration" do |configuration|
   with_deadline(timeout: 5) {
     send ":container :version is started with", "openbank/cnb-rates", ENV.fetch("VERSION", "latest"), "cnb-rates", [
@@ -97,6 +108,18 @@ step "cnb-rates is running with following configuration" do |configuration|
 
   id = containers[0].split(" ")[0]
 
+  %x(docker exec #{id} systemctl stop cnb-rates.service 2>&1)
   %x(docker exec #{id} bash -c "echo -e '#{params}' > /etc/init/cnb-rates.conf" 2>&1)
-  %x(docker exec #{id} systemctl restart cnb-rates.service 2>&1)
+
+  if defined? @timeshift
+    ts = @timeshift.strftime("%Y-%-m-%-d")
+    %x(docker exec #{id} systemctl stop systemd-timesyncd 2>&1 || :)
+    %x(docker exec #{id} date --set #{ts} 2>&1)
+    %x(docker exec #{id} hwclock --systohc 2>&1)
+  else
+    %x(docker exec #{id} systemctl start systemd-timesyncd 2>&1 || :)
+    %x(docker exec #{id} hwclock --systohc 2>&1)
+  end
+
+  %x(docker exec #{id} systemctl start cnb-rates.service 2>&1)
 end

@@ -37,9 +37,23 @@ type CNB struct {
 	fxMainYearlyPath   string
 	fxOtherMonthlyPath string
 	client             *httpclient.HttpClient
+	Kill chan struct{}
 }
 
-func New(cacheDirectory string) (error, *CNB) {
+func (a *CNB) Stop() {
+	if a == nil {
+		return
+	}
+
+	defer func() {
+		recover()
+		a.Kill = make(chan struct{})
+	}()
+
+	close(a.Kill)
+}
+
+func New(cacheDirectory, gateway string) (error, *CNB) {
 	if cacheDirectory == "" {
 		return fmt.Errorf("persistent directory cannot be empty"), nil
 	}
@@ -68,8 +82,8 @@ func New(cacheDirectory string) (error, *CNB) {
 	}
 
 	return nil, &CNB{
-		exchangeRateFixing: "https://www.cnb.cz/en/financial_markets/foreign_exchange_market",
-		client:             httpclient.New(),
+		exchangeRateFixing: gateway + "/en/financial_markets/foreign_exchange_market",
+		client:             httpclient.New(strings.HasPrefix(gateway, "https://")),
 		fxMainDailyPath:    fxMainDailyPath,
 		fxMainYearlyPath:   fxMainYearlyPath,
 		fxOtherMonthlyPath: fxOtherMonthlyPath,
@@ -140,6 +154,8 @@ func (a *CNB) SyncMainRatesYearly() error {
 			defer wg.Done()
 			for {
 				select {
+				case <-a.Kill:
+					return
 				case date, ok := <-queue:
 					if !ok {
 						return
@@ -156,7 +172,7 @@ func (a *CNB) SyncMainRatesYearly() error {
 					)
 
 					if data, err = a.fetchMainRateForYear(date); err != nil {
-						fmt.Println("CNB cloud returned error", err, date)
+						fmt.Println("CNB cloud yearly returned error", err)
 						continue
 					}
 					if !utils.UpdateFile(cachePath, data) {
@@ -205,6 +221,8 @@ func (a *CNB) SyncOtherRatesMonthly() error {
 			defer wg.Done()
 			for {
 				select {
+				case <-a.Kill:
+					return
 				case date, ok := <-queue:
 					if !ok {
 						return
@@ -221,7 +239,7 @@ func (a *CNB) SyncOtherRatesMonthly() error {
 					)
 
 					if data, err = a.fetchOtherRateForMonth(date); err != nil {
-						fmt.Println("CNB cloud returned error", err, date)
+						fmt.Println("CNB cloud monthly returned error", err)
 						continue
 					}
 
@@ -258,7 +276,7 @@ func (a *CNB) SyncMainRatesDaily() error {
 	now := time.Now()
 
 	startDate := time.Date(1991, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
-	endDate := now.AddDate(0, -1, 0)
+	endDate := now.AddDate(0, 0, -1)
 
 	dates := GetDatesBetween(startDate, endDate)
 
@@ -271,6 +289,8 @@ func (a *CNB) SyncMainRatesDaily() error {
 			defer wg.Done()
 			for {
 				select {
+				case <-a.Kill:
+					return
 				case date, ok := <-queue:
 					if !ok {
 						return
@@ -287,7 +307,7 @@ func (a *CNB) SyncMainRatesDaily() error {
 					)
 
 					if data, err = a.fetchMainRateForDay(date); err != nil {
-						fmt.Println("CNB cloud returned error", err, date)
+						fmt.Println("CNB cloud daily returned error", err)
 						continue
 					}
 
@@ -329,7 +349,7 @@ func (a *CNB) SyncMainRatesDaily() error {
 	)
 
 	if data, err = a.fetchMainRateForDay(now); err != nil {
-		fmt.Println("CNB cloud returned error", err, now.Format("02.01.2006"))
+		fmt.Println("CNB cloud returned error", err)
 		return err
 	}
 

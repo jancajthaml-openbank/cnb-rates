@@ -39,16 +39,20 @@ func init() {
 	viper.SetDefault("log.level", "DEBUG")
 	viper.SetDefault("storage", "/data")
 	viper.SetDefault("sync.rate", "1m")
+	viper.SetDefault("gateway", "https://www.cnb.cz")
 
 	log.SetFormatter(new(utils.LogFormat))
 }
 
 func validParams(params utils.RunParams) bool {
-
 	if os.MkdirAll(params.RootStorage, os.ModePerm) != nil {
 		log.Error("unable to assert storage directory")
 		return false
 	}
+
+	// FIXME validate sync rate duration
+
+	// FIXME validate that gateway is proper url
 
 	return true
 }
@@ -59,6 +63,7 @@ func loadParams() utils.RunParams {
 		Log:         viper.GetString("log"),
 		LogLevel:    viper.GetString("log.level"),
 		SyncRate:    viper.GetDuration("sync.rate"),
+		Gateway:     viper.GetString("gateway"),
 	}
 }
 

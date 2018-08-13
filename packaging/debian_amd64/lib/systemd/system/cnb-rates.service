@@ -1,0 +1,20 @@
+[Unit]
+Description=FX Rates mirror of Czech National Bank
+After=inetd.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/init/cnb-rates.conf
+ExecStart=/openbank/services/cnb-rates/linux-amd64
+ExecStop=/openbank/services/cnb-rates/gracefull-stop
+StandardInput=null
+LimitNOFILE=1048576
+LimitNPROC=infinity
+LimitCORE=infinity
+Restart=on-failure
+RestartSec=1
+TimeoutStartSec=0
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

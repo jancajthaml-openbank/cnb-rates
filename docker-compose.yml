@@ -106,6 +106,7 @@ services:
     volumes:
       - ./reports/logs:/reports
       - ./bbtest:/opt/bbtest
+      - journal:/data
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers:/var/lib/docker/containers
 
@@ -113,8 +114,6 @@ services:
 
 volumes:
   journal:
-    driver: local
-  metrics:
     driver: local
 
 # ---------------------------------------------------------------------------- #

@@ -37,17 +37,17 @@ case $key in
       targets=($(sed "s/,/ /g" <<< "$2"))
       shift
       shift
-      ;;
+    ;;
 
     -o|--output)
       dist="$2"
       shift
       shift
-      ;;
+    ;;
 
     *)
       shift
-      ;;
+    ;;
 
 esac
 done
