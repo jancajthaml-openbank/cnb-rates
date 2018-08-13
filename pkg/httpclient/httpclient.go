@@ -30,22 +30,12 @@ type HttpClient struct {
 	client *http.Client
 }
 
-func New() *HttpClient {
-	//cookieJar, _ := cookiejar.New(nil)
-
-	tr, err := getTransport()
-	if err != nil {
-		panic(err)
-	}
-
-	client := &http.Client{
-		//Jar:       cookieJar,
-		Timeout:   5 * time.Second,
-		Transport: tr,
-	}
-
+func New(secured bool) *HttpClient {
 	return &HttpClient{
-		client: client,
+		client: &http.Client{
+			Timeout:   5 * time.Second,
+			Transport: getTransport(secured),
+		},
 	}
 }
 
@@ -99,34 +89,40 @@ func (c *HttpClient) Get(url string) (contents io.Reader, err error) {
 	return
 }
 
-func getTransport() (transport *http.Transport, err error) {
-	transport = &http.Transport{
+func getTransport(secured bool) *http.Transport {
+	if secured {
+		return &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: 5 * time.Second,
+			}).DialContext,
+			TLSHandshakeTimeout: 5 * time.Second,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify:       false,
+				MinVersion:               tls.VersionTLS12,
+				PreferServerCipherSuites: false,
+				CipherSuites: []uint16{
+					tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+					tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+					tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+					tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+					tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+					tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+					tls.TLS_RSA_WITH_AES_128_CBC_SHA256,
+					tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+					tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+					tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+					tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+					tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+					tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+				},
+			},
+		}
+	}
+
+	return &http.Transport{
 		DialContext: (&net.Dialer{
 			Timeout: 5 * time.Second,
 		}).DialContext,
-		TLSHandshakeTimeout: 5 * time.Second,
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify:       false,
-			MinVersion:               tls.VersionTLS12,
-			PreferServerCipherSuites: false,
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-				tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_RSA_WITH_AES_128_CBC_SHA256,
-				tls.TLS_RSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-			},
-		},
 	}
-
-	return
 }

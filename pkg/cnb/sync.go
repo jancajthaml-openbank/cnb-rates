@@ -23,8 +23,9 @@ import (
 )
 
 func do(client *CNB) {
-	log.Debug("synchonizing main currencies fx daily rates")
+	log.Info("Synchronizing rates")
 
+	log.Debug("synchonizing main currencies fx daily rates")
 	client.SyncMainRatesDaily()
 
 	log.Debug("synchonizing other currencies fx monthly rates")
@@ -33,29 +34,53 @@ func do(client *CNB) {
 	log.Debug("synchonizing main currencies fx yearly rates")
 	client.SyncMainRatesYearly()
 
+	log.Info("Synchronized")
 	return
 }
 
 // SynchronizeRates synchronizes rate from CNB cloud
 func SynchronizeRates(wg *sync.WaitGroup, terminationChan chan struct{}, params utils.RunParams) {
+
+	// //panic: sync: WaitGroup is reused before previous Wait has returned
+
+	//		Aug 13 07:49:45.155687 cnb-rates linux-amd64[166]: panic: sync: WaitGroup is reused before previous Wait has returned
+	//		Aug 13 07:49:45.155687 cnb-rates linux-amd64[166]: goroutine 4 [running]:
+	//		Aug 13 07:49:45.155687 cnb-rates linux-amd64[166]: sync.(*WaitGroup).Wait(0xc4203f0580)
+	//		Aug 13 07:49:45.155687 cnb-rates linux-amd64[166]:         /usr/local/go/src/sync/waitgroup.go:131 +0xbb
+	//		Aug 13 07:49:45.155687 cnb-rates linux-amd64[166]: github.com/jancajthaml-openbank/cnb-rates/pkg/cnb.(*CNB).SyncOtherRatesMonthly(0xc42016c190, 0x1, 0x1)
+	//		Aug 13 07:49:45.156648 cnb-rates linux-amd64[166]:         /go/src/github.com/jancajthaml-openbank/cnb-rates/pkg/cnb/cnb.go:251 +0x3cb
+	//		Aug 13 07:49:45.156648 cnb-rates linux-amd64[166]: github.com/jancajthaml-openbank/cnb-rates/pkg/cnb.do(0xc42016c190)
+	//		Aug 13 07:49:45.156648 cnb-rates linux-amd64[166]:         /go/src/github.com/jancajthaml-openbank/cnb-rates/pkg/cnb/sync.go:31 +0xbd
+	//		Aug 13 07:49:45.156648 cnb-rates linux-amd64[166]: github.com/jancajthaml-openbank/cnb-rates/pkg/cnb.SynchronizeRates(0xc420026030, 0xc420178000, 0xc420014042, 0x18, 0x0, 0x0, 0xc420016054, 0x4, 0xc420016032, 0x5, ...)
+	//		Aug 13 07:49:45.156648 cnb-rates linux-amd64[166]:         /go/src/github.com/jancajthaml-openbank/cnb-rates/pkg/cnb/sync.go:60 +0x1a8
+	//		Aug 13 07:49:45.156648 cnb-rates linux-amd64[166]: created by main.main
+	//		Aug 13 07:49:45.156648 cnb-rates linux-amd64[166]:         /go/src/github.com/jancajthaml-openbank/cnb-rates/main.go:103 +0x381
+	//		Aug 13 07:49:45.160428 cnb-rates systemd[1]: cnb-rates.service: Main process exited, code=exited, status=2/INVALIDARGUMENT
+	//		Aug 13 07:49:45.175684 cnb-rates gracefull-stop[185]: not running
+
 	defer wg.Done()
+
+	log.Infof("Synchronizing each %v into %v", params.SyncRate, params.RootStorage)
 
 	ticker := time.NewTicker(params.SyncRate)
 	defer ticker.Stop()
 
-	err, client := New(params.RootStorage)
+	err, client := New(params.RootStorage, params.Gateway)
 	if err != nil {
 		log.Errorf("Unable to create new client %v", err)
 		return
 	}
 
-	log.Debugf("Synchronizing each %v into %v", params.SyncRate, params.RootStorage)
+	client.Stop()
+	go do(client)
 
 	for {
 		select {
 		case <-ticker.C:
-			do(client)
+			client.Stop()
+			go do(client)
 		case <-terminationChan:
+			client.Stop()
 			return
 		}
 	}

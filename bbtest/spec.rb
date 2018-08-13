@@ -17,9 +17,11 @@ RSpec.configure do |config|
   config.before(:suite) do |_|
     print "[ suite starting ]\n"
 
-    ["/data", "/metrics", "/reports"].each { |folder|
+    CNBHelper.start()
+
+    ["/data", "/reports"].each { |folder|
       FileUtils.mkdir_p folder
-      FileUtils.rm_rf Dir.glob("#{folder}/*")
+      %x(rm -rf #{folder}/*)
     }
 
     $wall_instance_counter = 0
@@ -38,26 +40,46 @@ RSpec.configure do |config|
 
     teardown_container = lambda do |container|
       label = %x(docker inspect --format='{{.Name}}' #{container})
-      label = ($? == 0 ? label.strip : container)
+      return unless $? == 0
 
-      %x(docker kill --signal="TERM" #{container} >/dev/null 2>&1 || :)
-      %x(docker logs #{container} >/reports/#{label}.log 2>&1)
+      %x(docker exec #{container} systemctl stop cnb-rates.service 2>&1)
+      %x(docker exec #{container} journalctl -o short-precise -u cnb-rates.service --no-pager >/reports/#{label.strip}.log 2>&1)
       %x(docker rm -f #{container} &>/dev/null || :)
     end
 
+    capture_journal = lambda do |container|
+      label = %x(docker inspect --format='{{.Name}}' #{container})
+      return unless $? == 0
+
+      %x(docker exec #{container} journalctl -o short-precise -u cnb-rates.service --no-pager >/reports/#{label.strip}.log 2>&1)
+    end
+
+    kill = lambda do |container|
+      label = %x(docker inspect --format='{{.Name}}' #{container})
+      return unless $? == 0
+      %x(docker rm -f #{container.strip} &>/dev/null || :)
+    end
+
     begin
-      Timeout.timeout(20) do
+      Timeout.timeout(5) do
         get_containers.call("openbank/cnb-rates").each { |container|
           teardown_container.call(container)
         }
       end
-    rescue Timeout::Error
-      #
+    rescue Timeout::Error => _
+      get_containers.call("openbank/cnb-rates").each { |container|
+        capture_journal.call(container)
+        kill.call(container)
+      }
+      print "[ suite ending   ] (was not able to teardown container in time)\n"
     end
 
-    FileUtils.cp_r '/metrics/.', '/reports'
-    ["/data", "/metrics"].each { |folder|
-      FileUtils.rm_rf Dir.glob("#{folder}/*")
+    CNBHelper.stop()
+
+    print "[ suite cleaning ]\n"
+
+    ["/data"].each { |folder|
+      %x(rm -rf #{folder}/*)
     }
 
     print "[ suite ended    ]"

@@ -10,19 +10,23 @@ while [ $# -gt 0 ] ; do
 key="$1"
 
 case $key in
-    -v|--version)
+
+  -v|--version)
     VERSION="$2"
     shift
     shift
-    ;;
-    -t|--token)
+  ;;
+
+  -t|--token)
     ACCESS_TOKEN="$2"
     shift
     shift
-    ;;
-    *)
+  ;;
+
+  *)
     shift
-    ;;
+  ;;
+
 esac
 done
 
@@ -43,7 +47,7 @@ echo "start release of ${REPO}:${VERSION} "
 RELEASE_INFO="https://api.github.com/repos/${REPO}/releases/tags/${VERSION}"
 response=$(curl \
     --silent \
-    -H "Authorization: token $ACCESS_TOKEN" \
+    -H "Authorization: token ${ACCESS_TOKEN}" \
     ${RELEASE_INFO} \
 )
 
@@ -73,9 +77,9 @@ response=$(
   curl \
     --fail \
     --request POST \
-    -H "Authorization: token $ACCESS_TOKEN" \
+    -H "Authorization: token ${ACCESS_TOKEN}" \
     --silent \
-    --data "$(echo $PAYLOAD)" \
+    --data "$(echo ${PAYLOAD})" \
     ${RELEASE_URI}
 )
 
@@ -91,7 +95,7 @@ for asset in $(ls -1 packaging/bin); do
     exit 1
   fi
 
-  echo "uploading $asset"
+  echo "uploading ${asset}"
 
   curl \
     --fail \
@@ -99,7 +103,7 @@ for asset in $(ls -1 packaging/bin); do
     -# \
     --output /dev/null \
     --data-binary "@${abspath}" \
-    -H "Authorization: token $ACCESS_TOKEN" \
+    -H "Authorization: token ${ACCESS_TOKEN}" \
     -H "Content-Type: application/binary" \
     "${UPLOAD_URL}?name=${asset}"
 done
