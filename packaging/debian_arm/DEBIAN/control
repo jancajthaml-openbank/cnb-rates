@@ -1,5 +1,5 @@
 Package: cnb-rates
-Version: 0.0.0+bbtest
+Version: 0.0.0+cleanup
 Architecture: arm
 Maintainer: Jan Cajthaml <jan.cajthaml@gmail.com>
 Depends: init-system-helpers (>= 1.18~)

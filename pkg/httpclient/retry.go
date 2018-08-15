@@ -17,8 +17,6 @@ package httpclient
 import (
 	"fmt"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
 func Retry(attempts int, sleep time.Duration, callback func() error) (err error) {
@@ -33,7 +31,6 @@ func Retry(attempts int, sleep time.Duration, callback func() error) (err error)
 		}
 
 		time.Sleep(sleep)
-		logrus.Debugf("retrying after error: %v", err)
 	}
 
 	return fmt.Errorf("after %d attempts, last error: %s", attempts, err)
