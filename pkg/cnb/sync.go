@@ -25,14 +25,11 @@ import (
 func do(client *CNB) {
 	log.Info("Synchronizing rates")
 
-	log.Debug("synchonizing main currencies fx daily rates")
+	log.Debug("Synchonizing main currencies fx daily rates")
 	client.SyncMainRatesDaily()
 
-	log.Debug("synchonizing other currencies fx monthly rates")
+	log.Debug("Synchonizing other currencies fx monthly rates")
 	client.SyncOtherRatesMonthly()
-
-	log.Debug("synchonizing main currencies fx yearly rates")
-	client.SyncMainRatesYearly()
 
 	log.Info("Synchronized")
 	return
@@ -60,7 +57,7 @@ func SynchronizeRates(wg *sync.WaitGroup, terminationChan chan struct{}, params 
 
 	defer wg.Done()
 
-	log.Infof("Synchronizing each %v into %v", params.SyncRate, params.RootStorage)
+	log.Infof("Synchronizing each %s into %s/cnb-rates", params.SyncRate, params.RootStorage)
 
 	ticker := time.NewTicker(params.SyncRate)
 	defer ticker.Stop()
@@ -71,16 +68,22 @@ func SynchronizeRates(wg *sync.WaitGroup, terminationChan chan struct{}, params 
 		return
 	}
 
-	client.Stop()
-	go do(client)
+	//terminationChan chan struct{}
+
+	//	killChan := make(chan struct{})
+
+	if !client.Synchronize(terminationChan) {
+		return
+	}
 
 	for {
 		select {
 		case <-ticker.C:
-			client.Stop()
-			go do(client)
+			if !client.Synchronize(terminationChan) {
+				return
+			}
 		case <-terminationChan:
-			client.Stop()
+			//close(killChan)
 			return
 		}
 	}

@@ -152,18 +152,10 @@ func getUrlForDateOtherFx(a *CNB, date time.Time) string {
 	return a.exchangeRateFixing + "/other_currencies_fx_rates/fx_rates.txt?month=" + date.Format("01") + "&year=" + date.Format("2006")
 }
 
-func getUrlForYearMainFx(a *CNB, year time.Time) string {
-	return a.exchangeRateFixing + "/exchange_rate_fixing/year.txt?year=" + year.Format("2006")
-}
-
 func getDailyCachePath(a *CNB, date time.Time) string {
 	return a.fxMainDailyPath + "/" + date.Format("02.01.2006")
 }
 
 func getDailyMonthlyPath(a *CNB, date time.Time) string {
 	return a.fxOtherMonthlyPath + "/" + date.Format("01.2006")
-}
-
-func getYearlyCachePath(a *CNB, year time.Time) string {
-	return a.fxMainYearlyPath + "/" + year.Format("2006")
 }

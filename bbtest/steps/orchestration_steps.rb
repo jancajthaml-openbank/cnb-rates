@@ -72,7 +72,7 @@ step ":container :version is started with" do |container, version, label, params
 end
 
 step "cnb-rates is running" do ||
-  with_deadline(timeout: 5) {
+  eventually(timeout: 5) {
     send ":container :version is started with", "openbank/cnb-rates", ENV.fetch("VERSION", "latest"), "cnb-rates", [
       "-v /sys/fs/cgroup:/sys/fs/cgroup:ro"
     ]
@@ -84,7 +84,7 @@ step "cnb-rates is running with mocked CNB Gateway" do ||
   params = [
     "CNB_RATES_STORAGE=/data",
     "CNB_RATES_LOG_LEVEL=INFO",
-    "CNB_RATES_SYNC_RATE=10s",
+    "CNB_RATES_SYNC_RATE=1m",
     "CNB_RATES_GATEWAY=http://#{my_id}:8080"
   ].join("\n")
 
@@ -92,7 +92,7 @@ step "cnb-rates is running with mocked CNB Gateway" do ||
 end
 
 step "cnb-rates is running with following configuration" do |configuration|
-  with_deadline(timeout: 5) {
+  eventually(timeout: 5) {
     send ":container :version is started with", "openbank/cnb-rates", ENV.fetch("VERSION", "latest"), "cnb-rates", [
       "-v /sys/fs/cgroup:/sys/fs/cgroup:ro"
     ]
