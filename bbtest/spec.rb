@@ -1,7 +1,7 @@
 require 'turnip/rspec'
 require 'json'
 require 'thread'
-require 'timeout'
+require 'openssl'
 
 Thread.abort_on_exception = true
 
@@ -13,7 +13,7 @@ RSpec.configure do |config|
   config.include EventuallyHelper, :type => :feature
   Dir.glob("./steps/*_steps.rb") { |f| load f, true }
 
-  config.before(:suite) do |_|
+  config.before(:suite) do
     print "[ suite starting ]\n"
 
     CNBHelper.start()
@@ -23,55 +23,45 @@ RSpec.configure do |config|
       %x(rm -rf #{folder}/*)
     }
 
-    $wall_instance_counter = 0
-    $tenant_id = nil
+    print "[ installing package ]\n"
+
+    %x(find /etc/bbtest/packages -type f -name 'cnb-rates_*_amd64.deb')
+      .split("\n")
+      .map(&:strip)
+      .reject { |x| x.empty? }
+      .each { |package|
+        IO.popen("apt-get -y install -f #{package}") do |io|
+          while (line = io.gets) do
+            puts line
+          end
+        end
+      }
 
     print "[ suite started  ]\n"
   end
 
-  config.after(:suite) do |_|
+  config.after(:suite) do
     print "\n[ suite ending   ]\n"
 
-    get_containers = lambda do |image|
-      containers = %x(docker ps -a | awk '{ print $1,$2 }' | grep #{image} | awk '{print $1 }' 2>/dev/null)
-      return ($? == 0 ? containers.split("\n") : [])
+    ids = %x(systemctl -a -t service --no-legend | awk '{ print $1 }')
+
+    if $?
+      ids = ids.split("\n").map(&:strip).reject { |x|
+        x.empty? || !x.start_with?("cnb-rates")
+      }.map { |x| x.chomp(".service") }
+    else
+      ids = []
     end
 
-    teardown_container = lambda do |container|
-      label = %x(docker inspect --format='{{.Name}}' #{container})
-      return unless $? == 0
+    ids.each { |e|
+      %x(journalctl -o short-precise -u #{e}.service --no-pager > /reports/#{e}.log 2>&1)
+      %x(systemctl stop #{e} 2>&1)
+      %x(systemctl disable #{e} 2>&1)
+      %x(journalctl -o short-precise -u #{e}.service --no-pager > /reports/#{e}.log 2>&1)
+    } unless ids.empty?
 
-      %x(docker exec #{container} systemctl stop cnb-rates.service 2>&1)
-      %x(docker exec #{container} journalctl -o short-precise -u cnb-rates.service --no-pager >/reports/#{label.strip}.log 2>&1)
-      %x(docker rm -f #{container} &>/dev/null || :)
-    end
-
-    capture_journal = lambda do |container|
-      label = %x(docker inspect --format='{{.Name}}' #{container})
-      return unless $? == 0
-
-      %x(docker exec #{container} journalctl -o short-precise -u cnb-rates.service --no-pager >/reports/#{label.strip}.log 2>&1)
-    end
-
-    kill = lambda do |container|
-      label = %x(docker inspect --format='{{.Name}}' #{container})
-      return unless $? == 0
-      %x(docker rm -f #{container.strip} &>/dev/null || :)
-    end
-
-    begin
-      Timeout.timeout(5) do
-        get_containers.call("openbank/cnb-rates").each { |container|
-          teardown_container.call(container)
-        }
-      end
-    rescue Timeout::Error => _
-      get_containers.call("openbank/cnb-rates").each { |container|
-        capture_journal.call(container)
-        kill.call(container)
-      }
-      print "[ suite ending   ] (was not able to teardown container in time)\n"
-    end
+    %x(journalctl -o short-precise -ex --no-pager > /reports/all.log 2>&1)
+    %x(journalctl -o short-precise -t cnb-rates-unit --no-pager > /reports/cnb-rates-unit.log 2>&1)
 
     CNBHelper.stop()
 
@@ -83,5 +73,6 @@ RSpec.configure do |config|
 
     print "[ suite ended    ]"
   end
+
 
 end

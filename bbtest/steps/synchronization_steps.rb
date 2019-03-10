@@ -1,20 +1,36 @@
 require 'date'
+require 'json-diff'
+
 
 step "all CNB data are eventually synchronized" do ||
-  eventually(timeout: 1) {
-    expect(File.directory?("/data/cnb-rates/raw/fx-main/daily")).to be(true), "directory /data/cnb-rates/raw/fx-main/daily does not exists"
+  eventually(timeout: 10) {
+    formatted = @timeshift.strftime("%Y-%m-%d %H:%M:%S")
+
+    %x(timedatectl set-ntp 0)
+    %x(timedatectl set-local-rtc 0)
+    %x(timedatectl set-time "#{formatted}")
+    %x(systemctl restart cron)
+
+    eventually(timeout: 3) {
+      expect(File.directory?("/data/rates/cnb/raw/daily/fx-main")).to be(true), "directory /data/rates/cnb/raw/daily/fx-main does not exists"
+    }
   }
 
   date_from  = Date.parse('1991-01-01')
   date_to = if defined? @timeshift then @timeshift else Date.today end
 
-  last_date = date_to.next_month.prev_day.strftime("%d.%m.%Y")
+  expected_days = TimeshiftHelper.get_dates_between(date_from, date_to).map { |d| d.strftime("%d.%m.%Y") }
+  expected_months = TimeshiftHelper.get_months_between(date_from, date_to).map { |d| d.strftime("%m.%Y") }
 
-  expected = (date_from..date_to).select { |d| (1..5).include?(d.wday) }.map { |d| d.strftime("%d.%m.%Y") }
+  eventually(timeout: 20) {
+    actual = Dir["/data/rates/cnb/raw/daily/fx-main/*"].select{ |f| File.file? f }.map{ |f| File.basename f }
+    diff = JsonDiff.diff(actual, expected_days).select{ |item| item["op"] != "remove" and item["op"] != "move" }.map{ |item| item["value"] or item }
+    raise "expectation failure:\ngot:\n#{actual}\nexpected:\n#{expected_days}\ndiff:\n#{diff}" if diff != []
+  }
 
-  eventually(timeout: 60) {
-    actual = Dir["/data/cnb-rates/raw/fx-main/daily/*"].select{ |f| File.file? f }.map{ |f| File.basename f }
-    expect(actual).to satisfy { |v| v.length >= expected.length }, "#expected to found #{expected.length} files but found #{actual.length}"
-    expect(actual).to include(*expected)
+  eventually(timeout: 20) {
+    actual = Dir["/data/rates/cnb/raw/monthly/fx-other/*"].select{ |f| File.file? f }.map{ |f| File.basename f }
+    diff = JsonDiff.diff(actual, expected_months).select{ |item| item["op"] != "remove" and item["op"] != "move" }.map{ |item| item["value"] or item }
+    raise "expectation failure:\ngot:\n#{actual}\nexpected:\n#{expected_months}\ndiff:\n#{diff}" if diff != []
   }
 end

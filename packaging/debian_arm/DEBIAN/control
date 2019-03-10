@@ -1,9 +1,0 @@
-Package: cnb-rates
-Version: 0.0.0+cleanup
-Architecture: arm
-Maintainer: Jan Cajthaml <jan.cajthaml@gmail.com>
-Depends: init-system-helpers (>= 1.18~)
-Section: openbank
-Priority: extra
-Vcs-Git: git@github.com:jancajthaml-openbank/cnb-rates.git
-Description: Openbank messaging relay

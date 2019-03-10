@@ -1,9 +1,9 @@
 Package: cnb-rates
-Version: 0.0.0+cleanup
+Version: 0.0.0+stability
 Architecture: amd64
 Maintainer: Jan Cajthaml <jan.cajthaml@gmail.com>
-Depends: init-system-helpers (>= 1.18~)
+Depends: init-system-helpers (>= 1.18~), openssl (>= 1.1~)
 Section: openbank
 Priority: extra
 Vcs-Git: git@github.com:jancajthaml-openbank/cnb-rates.git
-Description: Openbank messaging relay
+Description: Openbank CNB Rates Import
