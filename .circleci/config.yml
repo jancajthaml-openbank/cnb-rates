@@ -46,16 +46,6 @@ workflows:
             branches:
               ignore: /.*/
 
-  rolling:
-    triggers:
-      - schedule:
-          cron: "0 * * * *"
-          filters:
-            branches:
-              only: master
-    jobs:
-      - bbtest
-
 # ---------------------------------------------------------------------------- #
 
 jobs:
@@ -70,56 +60,99 @@ jobs:
           - GOARCH: amd64
           - GOOS: linux
           - GOBIN: /usr/lib/go/bin/go
-    working_directory: /go/src/github.com/jancajthaml-openbank/cnb-rates
+    working_directory: /home/circleci/project
     steps:
       - checkout
       - setup_remote_docker
-      - run: docker build -t openbankdev/cnb-rates_bbtest ./bbtest
-      - run: docker build -t openbankdev/cnb-rates_base ./dev
+      - run: docker build -t openbankdev/cnb_rates_base ./dev
       - run: docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
       - deploy:
           name: Push dev docker images to DockerHUB
           command: |
             upload_to_docker_hub() {
-              docker tag ${1} "${1}:latest"
-              docker push "${1}:latest"
+              docker tag ${1} "${1}:${2}"
+              docker push "${1}:${2}"
             }
 
-            upload_to_docker_hub openbankdev/cnb-rates_bbtest &
-            upload_to_docker_hub openbankdev/cnb-rates_base &
-            wait
+            upload_to_docker_hub openbankdev/cnb_rates_base latest
       - save_cache:
           key: cnb-rates-base-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_TAG }}
           paths:
-            - /go/src/github.com/jancajthaml-openbank/cnb-rates
+            - /home/circleci/project
 
   # -------------------------------------------------------------------------- #
 
   test:
     docker:
-      - image: openbankdev/cnb-rates_base
-    working_directory: /go/src/github.com/jancajthaml-openbank/cnb-rates
+      - image: openbankdev/cnb_rates_base
+    working_directory: /home/circleci/project
     steps:
       - restore_cache:
           keys:
             - cnb-rates-base-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_TAG }}
-      - run: dep ensure
-      - run: go test -v ./... -benchmem -bench=. -timeout=20s
+      - run:
+          name: ensure services namespace
+          command: |
+            mkdir -p /go/src/github.com/jancajthaml-openbank
+            cp -r /home/circleci/project/services/cnb-rates-rest /go/src/github.com/jancajthaml-openbank/cnb-rates-rest
+            cp -r /home/circleci/project/services/cnb-rates-unit /go/src/github.com/jancajthaml-openbank/cnb-rates-unit
+      - run:
+          name: sync dependencies
+          command: |
+            ./dev/lifecycle/sync --pkg cnb-rates-rest
+            ./dev/lifecycle/sync --pkg cnb-rates-unit
+      - run:
+          name: move vendor folder to project
+          command: |
+            cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-rest/vendor /home/circleci/project/services/cnb-rates-rest/vendor
+            cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-unit/vendor /home/circleci/project/services/cnb-rates-unit/vendor
+      - run:
+          name: unit test cnb-rates-rest
+          command: |
+            ./dev/lifecycle/test --pkg cnb-rates-rest
+      - run:
+          name: unit test cnb-rates-unit
+          command: |
+            ./dev/lifecycle/test --pkg cnb-rates-unit
 
   # -------------------------------------------------------------------------- #
 
   build:
     docker:
-      - image: openbankdev/cnb-rates_base
-    working_directory: /go/src/github.com/jancajthaml-openbank/cnb-rates
+      - image: openbankdev/cnb_rates_base
+    working_directory: /home/circleci/project
     steps:
       - restore_cache:
           keys:
             - cnb-rates-base-{{ .Environment.CIRCLE_SHA1 }}
-      - run: dep ensure
-      - run: ./dev/lifecycle/package --target linux/amd64,linux/arm
       - run:
-          name: Package debian
+          name: ensure services namespace
+          command: |
+            mkdir -p /go/src/github.com/jancajthaml-openbank
+            cp -r /home/circleci/project/services/cnb-rates-rest /go/src/github.com/jancajthaml-openbank/cnb-rates-rest
+            cp -r /home/circleci/project/services/cnb-rates-unit /go/src/github.com/jancajthaml-openbank/cnb-rates-unit
+      - run:
+          name: sync dependencies
+          command: |
+            ./dev/lifecycle/sync --pkg cnb-rates-rest
+            ./dev/lifecycle/sync --pkg cnb-rates-unit
+      - run:
+          name: move vendor folder to project
+          command: |
+            cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-rest/vendor /home/circleci/project/services/cnb-rates-rest/vendor
+            cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-unit/vendor /home/circleci/project/services/cnb-rates-unit/vendor
+      - run:
+          name: package binary of cnb-rates-unit
+          command: |
+            ./dev/lifecycle/package --arch linux/amd64 --pkg cnb-rates-unit
+            ./dev/lifecycle/package --arch linux/armhf --pkg cnb-rates-unit
+      - run:
+          name: package binary of cnb-rates-rest
+          command: |
+            ./dev/lifecycle/package --arch linux/amd64 --pkg cnb-rates-rest
+            ./dev/lifecycle/package --arch linux/armhf --pkg cnb-rates-rest
+      - run:
+          name: Package debian of cnb-rates
           command: |
             if [ -z ${CIRCLE_TAG} ] ; then
               tags=($(git tag --sort=-v:refname))
@@ -134,51 +167,52 @@ jobs:
               VERSION=${CIRCLE_TAG}
             fi
 
-            ./dev/lifecycle/debian -v ${VERSION} --arch amd64
-            ./dev/lifecycle/debian -v ${VERSION} --arch arm
-
+            ./dev/lifecycle/debian -v ${VERSION} --arch amd64 --pkg cnb-rates
+            ./dev/lifecycle/debian -v ${VERSION} --arch armhf --pkg cnb-rates
       - save_cache:
           key: cnb-rates-binaries-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_TAG }}
           paths:
-            - /go/src/github.com/jancajthaml-openbank/cnb-rates
-
+            - /home/circleci/project
+      - persist_to_workspace:
+          root: /home/circleci/project/packaging
+          paths:
+            - bin
   # -------------------------------------------------------------------------- #
 
   package:
     docker:
-      - image: openbankdev/cnb-rates_base
-    working_directory: /go/src/github.com/jancajthaml-openbank/cnb-rates
+      - image: openbankdev/cnb_rates_base
+    working_directory: /home/circleci/project
     steps:
       - setup_remote_docker
       - restore_cache:
           keys:
             - cnb-rates-binaries-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_TAG }}
-      - run: if [ -z "$(find ./packaging/bin -type f -name 'cnb-rates_*_amd64.deb' -print)" ] ; then exit 1 ; fi
-      - run: if [ ! -f ./packaging/bin/linux-amd64 ] ; then exit 1 ; fi
-      - run: if [ -z "$(find ./packaging/bin -type f -name 'cnb-rates_*_arm.deb' -print)" ] ; then exit 1 ; fi
-      - run: if [ ! -f ./packaging/bin/linux-arm ] ; then exit 1 ; fi
       - run: docker build -t openbank/cnb-rates .
       - run: docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
       - deploy:
           name: Push snapshot docker images to DockerHUB
           command: |
-            if [ -z ${CIRCLE_TAG} ] ; then
-              VERSION=$(sed 's:.*/::' <<< ${CIRCLE_BRANCH})
-              echo "snapshot ${VERSION}"
+            upload() {
+              if [ -z ${CIRCLE_TAG} ] ; then
+                VERSION=$(sed 's:.*/::' <<< ${CIRCLE_BRANCH})
+                echo "snapshot ${VERSION}"
 
-              docker tag openbank/cnb-rates openbank/cnb-rates:${VERSION}
-              docker push openbank/cnb-rates:${VERSION}
+                docker tag ${1} ${1}:${VERSION}
+                docker push ${1}:${VERSION}
+              else
+                VERSION=${CIRCLE_TAG}
+                echo "release ${VERSION}"
 
-            else
-              VERSION=${CIRCLE_TAG}
-              echo "release ${VERSION}"
+                docker tag ${1} ${1}:${VERSION}
+                docker push ${1}:${VERSION}
 
-              docker tag openbank/cnb-rates openbank/cnb-rates:${VERSION}
-              docker push openbank/cnb-rates:${VERSION}
+                docker tag ${1} ${1}:latest
+                docker push ${1}:latest
+              fi
+            }
 
-              docker tag openbank/cnb-rates openbank/cnb-rates:latest
-              docker push openbank/cnb-rates:latest
-            fi
+            upload openbank/cnb-rates
 
   # -------------------------------------------------------------------------- #
 
@@ -187,25 +221,24 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
+      - attach_workspace:
+          at: /home/circleci/project/packaging
+      - run: docker build -t openbankdev/cnb_rates_bbtest -f ./bbtest/Dockerfile .
       - run:
           name: Run blackbox tests
           command: |
-            pull() {
-              echo "pulling ${1}:${2}"
-              docker pull ${1}:${2}
-            }
-
-            if [ -z ${CIRCLE_TAG} ] ; then
-              VERSION=$(sed 's:.*/::' <<< ${CIRCLE_BRANCH})
-            else
-              VERSION=${CIRCLE_TAG}
-            fi
-
-            pull openbank/cnb-rates ${VERSION} & \
-            pull openbankdev/cnb-rates_bbtest latest & \
-            wait
-
-            VERSION=${VERSION} docker-compose run --rm bbtest
+            docker exec -it $(\
+              docker run -d -ti \
+                -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+                -v /home/circleci/project/bbtest:/opt/bbtest \
+                -v /home/circleci/project/reports:/reports \
+                --cap-add=SYS_TIME \
+              openbankdev/cnb_rates_bbtest \
+            ) rspec --require /opt/bbtest/spec.rb \
+              --format documentation \
+              --format RspecJunitFormatter \
+              --out junit.xml \
+              --pattern /opt/bbtest/features/*.feature
       - store_test_results:
           path: /home/circleci/project/bbtest
       - store_artifacts:
@@ -215,21 +248,20 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   release:
-
     docker:
-      - image: openbankdev/cnb-rates_base
-
-    working_directory: /go/src/github.com/jancajthaml-openbank/cnb-rates
-
+      - image: openbankdev/cnb_rates_base
+    working_directory: /home/circleci/project
     steps:
       - setup_remote_docker
       - restore_cache:
           keys:
             - cnb-rates-binaries-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_TAG }}
+      - run: if [ ! -f ./packaging/bin/cnb-rates-rest-linux-amd64 ] ; then exit 1 ; fi
+      - run: if [ ! -f ./packaging/bin/cnb-rates-unit-linux-amd64 ] ; then exit 1 ; fi
+      - run: if [ ! -f ./packaging/bin/cnb-rates-rest-linux-armhf ] ; then exit 1 ; fi
+      - run: if [ ! -f ./packaging/bin/cnb-rates-unit-linux-armhf ] ; then exit 1 ; fi
       - run: if [ ! -f ./packaging/bin/cnb-rates_${CIRCLE_TAG#v}_amd64.deb ] ; then exit 1 ; fi
-      - run: if [ ! -f ./packaging/bin/linux-amd64 ] ; then exit 1 ; fi
-      - run: if [ ! -f ./packaging/bin/cnb-rates_${CIRCLE_TAG#v}_arm.deb ] ; then exit 1 ; fi
-      - run: if [ ! -f ./packaging/bin/linux-arm ] ; then exit 1 ; fi
+      - run: if [ ! -f ./packaging/bin/cnb-rates_${CIRCLE_TAG#v}_armhf.deb ] ; then exit 1 ; fi
       - deploy:
           name: Release artifacts to github
           command: |

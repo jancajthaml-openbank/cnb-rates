@@ -1,108 +1,104 @@
+require 'json'
+require 'date'
+require 'json-schema'
 require 'thread'
-require 'agoo'
+require_relative '../shims/harden_webrick'
+require_relative './cnb_mock'
 
-class YearlyHandler
-  def call(req)
-    qs = Hash.new
-    req['QUERY_STRING'].split('&').each { |pair|
-      key, value = pair.split('=', 2)
-      qs[key] = value
-    }
 
-    if qs.has_key?('year')
-      resp = [
-        "Date|1 ILS|100 JPY"
-      ]
-    else
-      resp = []
-    end
+class CNBGetDailyMainRates < WEBrick::HTTPServlet::AbstractServlet
 
-    # fixme generate
+  def do_GET(request, response)
+    status, body = process(request)
 
-    [ 200, { }, [ resp.join("\n") ] ]
+    response.status = status
+    response.body = body
   end
-end
 
-class MonthlyHandler
-  def call(req)
-    qs = Hash.new
-    req['QUERY_STRING'].split('&').each { |pair|
-      key, value = pair.split('=', 2)
-      qs[key] = value
-    }
+  def process(request)
+    query = request.query()
 
-    if qs.has_key?('month') && qs.has_key?('year')
-      date = Date.strptime(qs['month'] + "." + qs['year'], "%m.%Y").next_month.prev_day
+    if query.has_key?('date')
+      for_date = Date.strptime(query['date'], "%d.%m.%Y")
     else
-      date = Date.now
+      for_date = Date.now
     end
 
-    resp = [
-      (date.strftime('%d.%b %Y') + " \#" + date.strftime('%j').to_i.to_s),
-      "Country|Currency|Amount|Code|Rate",
-      "Afghanistan|afghani|100|AFN|10",
-      "Qatar|rial|1|QAR|10"
-    ]
-
-    [ 200, { }, [ resp.join("\n") ] ]
-  end
-end
-
-class DailyHandler
-  def call(req)
-    qs = Hash.new
-    req['QUERY_STRING'].split('&').each { |pair|
-      key, value = pair.split('=', 2)
-      qs[key] = value
-    }
-
-    if qs.has_key?('date')
-      date = Date.strptime(qs['date'], "%d.%m.%Y")
-    else
-      date = Date.now
-    end
-
-    resp = [
-      (date.strftime('%d.%b %Y') + " \#" + date.strftime('%j').to_i.to_s),
+    return 200, [
+      (for_date.strftime('%d.%b %Y') + " \#" + for_date.strftime('%j').to_i.to_s),
       "Country|Currency|Amount|Code|Rate",
       "Israel|shekel|1|ILS|10",
       "Japan|yen|100|JPY|10"
-    ]
+    ].join("\n")
+  end
+end
 
-    [ 200, { }, [ resp.join("\n") ] ]
+class CNBGetOtherFXRates < WEBrick::HTTPServlet::AbstractServlet
+
+  def do_GET(request, response)
+    status, body = process(request)
+
+    response.status = status
+    response.body = body
+  end
+
+  def process(request)
+    query = request.query()
+
+    if query.has_key?('month') && query.has_key?('year')
+      for_date = Date.strptime(query['month'] + "." + query['year'], "%m.%Y").next_month.prev_day
+    else
+      for_date = Date.now
+    end
+
+    return 200, [
+      (for_date.strftime('%d.%b %Y') + " \#" + for_date.strftime('%j').to_i.to_s),
+      "Country|Currency|Amount|Code|Rate",
+      "Afghanistan|afghani|100|AFN|10",
+      "Qatar|rial|1|QAR|10"
+    ].join("\n")
   end
 end
 
 module CNBHelper
 
   def self.start
+    self.server = nil
+
     begin
-      Agoo::Server.init(8080, 'root')
-    rescue Exception => _
-      raise "Failed to allocate server binding!"
+      self.server = WEBrick::HTTPServer.new(
+        Port: 4000,
+        Logger: WEBrick::Log.new("/dev/null"),
+        AccessLog: [],
+        SSLEnable: true
+      )
+
+    rescue Exception => err
+      raise err
+      raise "Failed to allocate server binding! #{err}"
     end
 
-    Agoo::Server.handle(:GET, "/en/financial_markets/foreign_exchange_market/exchange_rate_fixing/daily.txt", DailyHandler.new)
-    Agoo::Server.handle(:GET, "/en/financial_markets/foreign_exchange_market/other_currencies_fx_rates/fx_rates.txt", MonthlyHandler.new)
-    Agoo::Server.handle(:GET, "/en/financial_markets/foreign_exchange_market/exchange_rate_fixing/year.txt", YearlyHandler.new)
+    self.server.mount "/en/financial_markets/foreign_exchange_market/exchange_rate_fixing/daily.txt", CNBGetDailyMainRates
+    self.server.mount "/en/financial_markets/foreign_exchange_market/other_currencies_fx_rates/fx_rates.txt", CNBGetOtherFXRates
 
     self.server_daemon = Thread.new do
-      Agoo::Server.start()
+      self.server.start()
     end
   end
 
   def self.stop
-    Agoo::Server.shutdown()
+    self.server.shutdown() unless self.server.nil?
     begin
       self.server_daemon.join() unless self.server_daemon.nil?
     rescue
     ensure
       self.server_daemon = nil
+      self.server = nil
     end
   end
 
   class << self
-    attr_accessor :server_daemon
+    attr_accessor :server_daemon, :server
   end
 
 end

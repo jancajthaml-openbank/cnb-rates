@@ -12,37 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:stretch AS base
+FROM alpine
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    LANG=C.UTF-8
+COPY packaging/bin/* /opt/artifacts/
 
-RUN apt-get update -y && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends apt-utils
+RUN ls -la /opt/artifacts/
 
-# ---------------------------------------------------------------------------- #
 
-FROM base
+RUN \
+    if \
+      \
+      [ ! -f /opt/artifacts/cnb-rates-rest-linux-amd64 ] || \
+      [ ! -f /opt/artifacts/cnb-rates-unit-linux-amd64 ] || \
+      [ ! -f /opt/artifacts/cnb-rates-rest-linux-armhf ] || \
+      [ ! -f /opt/artifacts/cnb-rates-unit-linux-armhf ] || \
+      \
+      [ -z "$(find . /opt/artifacts -type f -name 'cnb-rates_*_amd64.deb' -print)" ] || \
+      [ -z "$(find /opt/artifacts -type f -name 'cnb-rates_*_armhf.deb' -print)" ] \
+      \
+      ; then \
+      (>&2 echo "missing expected files, run package and debian for both amd64 and armhf") ; \
+      exit 1 ; \
+    fi
 
-MAINTAINER Jan Cajthaml <jan.cajthaml@gmail.com>
-
-RUN apt-get -y install --allow-downgrades --no-install-recommends \
-    \
-      rsyslog=8.24.0-1 \
-      libsystemd0>=232-25 \
-      systemd>=232-25 \
-    && \
-    apt-get clean && \
-    sed -i '/imklog/{s/^/#/}' /etc/rsyslog.conf
-
-COPY packaging/params.conf /etc/init/cnb-rates.conf
-
-COPY packaging/bin /tmp/packages
-
-RUN find /tmp/packages -type f -name 'cnb-rates_*_amd64.deb' -exec apt-get -y install --no-install-recommends -f \{\} \; && \
-    rm -rf /tmp/packages
-
-STOPSIGNAL SIGTERM
-
-ENTRYPOINT ["/lib/systemd/systemd"]
+ENTRYPOINT [ "echo", "only stores candidate binaries in /opt/artifacts" ]

@@ -1,125 +1,71 @@
-require 'tempfile'
+require_relative 'placeholders'
 
-step "no :container :label is running" do |container, label|
-  containers = %x(docker ps -a -f name=#{label} | awk '$2 ~ "#{container}" {print $1}' 2>/dev/null)
-  expect($?).to be_success
+step "cnb-rates is restarted" do ||
+  ids = %x(systemctl -t service --no-legend | awk '{ print $1 }')
+  expect($?).to be_success, ids
 
-  ids = containers.split("\n").map(&:strip).reject(&:empty?)
-  return if ids.empty?
+  ids = ids.split("\n").map(&:strip).reject { |x|
+    x.empty? || !x.start_with?("cnb-rates")
+  }.map { |x| x.chomp(".service") }
 
-  ids.each { |id|
-    eventually(timeout: 2) {
-      send ":container running state is :state", id, false
+  expect(ids).not_to be_empty
 
-      label = %x(docker inspect --format='{{.Name}}' #{id})
-      label = ($? == 0 ? label.strip : id)
+  ids.each { |e|
+    %x(systemctl restart #{e} 2>&1)
+  }
 
-      %x(docker exec #{container} journalctl -o short-precise -u cnb-rates.service --no-pager >/reports/#{label}.log 2>&1)
-      %x(docker rm -f #{id} &>/dev/null || :)
+  ids << "cnb-rates"
+
+  eventually() {
+    ids.each { |e|
+      out = %x(systemctl show -p SubState #{e} 2>&1 | sed 's/SubState=//g')
+      expect(out.strip).to eq("running")
     }
   }
 end
 
-step ":container running state is :state" do |container, state|
-  eventually(timeout: 3) {
-    %x(docker exec #{container} systemctl stop cnb-rates.service 2>&1) unless state
-    expect($?).to be_success
-
-    %x(docker #{state ? "start" : "stop"} #{container} >/dev/null 2>&1)
-
-    container_state = %x(docker inspect -f {{.State.Running}} #{container} 2>/dev/null)
-    expect($?).to be_success
-    expect(container_state.strip).to eq(state ? "true" : "false")
-  }
-end
-
-step ":container :version is started with" do |container, version, label, params|
-  containers = %x(docker ps -a --filter name=#{label} --filter status=running --format "{{.ID}} {{.Image}}")
-  expect($?).to be_success
-  containers = containers.split("\n").map(&:strip).reject(&:empty?)
-
-  unless containers.empty?
-    id, image = containers[0].split(" ")
-    return if (image == "#{container}:#{version}")
-  end
-
-  send "no :container :label is running", container, label
-
-  prefix = ENV.fetch('COMPOSE_PROJECT_NAME', "")
-  my_id = %x(cat /etc/hostname).strip
-  args = [
-    "docker",
-    "run",
-    "-d",
-    "--net=#{prefix}_default",
-    "--volumes-from=#{my_id}",
-    "--log-driver=json-file",
-    "-h #{label}",
-    "--net-alias=#{label}",
-    "--name=#{label}",
-    "--privileged"
-  ] << params << [
-    "#{container}:#{version}",
-    "2>&1"
-  ]
-
-  id = %x(#{args.join(" ")})
-  expect($?).to be_success, id
-
-  eventually(timeout: 3) {
-    send ":container running state is :state", id, true
-  }
-end
-
-step "cnb-rates is running" do ||
-  eventually(timeout: 5) {
-    send ":container :version is started with", "openbank/cnb-rates", ENV.fetch("VERSION", "latest"), "cnb-rates", [
-      "-v /sys/fs/cgroup:/sys/fs/cgroup:ro"
-    ]
-  }
-end
-
 step "cnb-rates is running with mocked CNB Gateway" do ||
-  my_id = %x(cat /etc/hostname).strip
   params = [
-    "CNB_RATES_STORAGE=/data",
-    "CNB_RATES_LOG_LEVEL=INFO",
-    "CNB_RATES_SYNC_RATE=1m",
-    "CNB_RATES_GATEWAY=http://#{my_id}:8080"
+    "CNB_GATEWAY=https://localhost:4000"
   ].join("\n")
 
-  send "cnb-rates is running with following configuration", params
+  send "cnb-rates is reconfigured with", params
 end
 
-step "cnb-rates is running with following configuration" do |configuration|
-  eventually(timeout: 5) {
-    send ":container :version is started with", "openbank/cnb-rates", ENV.fetch("VERSION", "latest"), "cnb-rates", [
-      "-v /sys/fs/cgroup:/sys/fs/cgroup:ro"
-    ]
+step "cnb-rates is reconfigured with" do |configuration|
+  params = Hash[configuration.split("\n").map(&:strip).reject(&:empty?).map {|el| el.split '='}]
+
+  defaults = {
+    "STORAGE" => "/data",
+    "LOG_LEVEL" => "DEBUG",
+    "CNB_GATEWAY" => "https://localhost:4000",
+    "METRICS_OUTPUT" => "/reports/metrics.json",
+    "METRICS_REFRESHRATE" => "1h",
+    "HTTP_PORT" => "443",
+    "SECRETS" => "/opt/cnb-rates/secrets",
   }
 
-  params = configuration.split("\n").map(&:strip).reject(&:empty?).join("\n").inspect.delete('\"')
+  config = Array[defaults.merge(params).map {|k,v| "CNB_RATES_#{k}=#{v}"}]
+  config = config.join("\n").inspect.delete('\"')
 
-  containers = %x(docker ps -a --filter name=cnb-rates --filter status=running --format "{{.ID}} {{.Image}}")
-  expect($?).to be_success
-  containers = containers.split("\n").map(&:strip).reject(&:empty?)
+  %x(mkdir -p /etc/init)
+  %x(echo '#{config}' > /etc/init/cnb-rates.conf)
 
-  expect(containers).not_to be_empty
+  ids = %x(systemctl list-units | awk '{ print $1 }')
+  expect($?).to be_success, ids
 
-  id = containers[0].split(" ")[0]
+  ids = ids.split("\n").map(&:strip).reject { |x|
+    x.empty? || !x.start_with?("cnb-rates")
+  }.map { |x| x.chomp(".service") }
 
-  %x(docker exec #{id} systemctl stop cnb-rates.service 2>&1)
-  %x(docker exec #{id} bash -c "echo -e '#{params}' > /etc/init/cnb-rates.conf" 2>&1)
+  ids.each { |e|
+    %x(systemctl restart #{e} 2>&1)
+  }
 
-  if defined? @timeshift
-    ts = @timeshift.strftime("%Y-%-m-%-d")
-    %x(docker exec #{id} systemctl stop systemd-timesyncd 2>&1 || :)
-    %x(docker exec #{id} date --set #{ts} 2>&1)
-    %x(docker exec #{id} hwclock --systohc 2>&1)
-  else
-    %x(docker exec #{id} systemctl start systemd-timesyncd 2>&1 || :)
-    %x(docker exec #{id} hwclock --systohc 2>&1)
-  end
-
-  %x(docker exec #{id} systemctl start cnb-rates.service 2>&1)
+  eventually() {
+    ids.each { |e|
+      out = %x(systemctl show -p SubState #{e} 2>&1 | sed 's/SubState=//g')
+      expect(out.strip).to eq("running")
+    }
+  }
 end

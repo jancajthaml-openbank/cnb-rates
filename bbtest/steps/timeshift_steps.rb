@@ -1,3 +1,5 @@
+require "date"
+
 step "current time is :timeshift" do |timeshift|
-  	@timeshift = Date.strptime(timeshift, "%d.%m.%Y")
+  @timeshift = DateTime.parse(timeshift)
 end
