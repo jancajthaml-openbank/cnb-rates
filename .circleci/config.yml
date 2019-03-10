@@ -232,6 +232,7 @@ jobs:
                 -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
                 -v /home/circleci/project/bbtest:/opt/bbtest \
                 -v /home/circleci/project/reports:/reports \
+                --cap-add=SYS_TIME \
               openbankdev/cnb_rates_bbtest \
             ) rspec --require /opt/bbtest/spec.rb \
               --format documentation \

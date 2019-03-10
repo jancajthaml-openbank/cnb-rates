@@ -9,6 +9,7 @@ step "all CNB data are eventually synchronized" do ||
     %x(timedatectl set-ntp 0)
     %x(timedatectl set-local-rtc 0)
     %x(timedatectl set-time "#{formatted}")
+    expect($?).to be_success, "failed to set time to #{formatted}"
     %x(systemctl restart cron)
 
     eventually(timeout: 3) {
