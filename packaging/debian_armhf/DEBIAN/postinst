@@ -8,9 +8,12 @@ case "$1" in
     if [ -f "/etc/init/cnb-rates.conf" ] ; then
       systemctl unmask cnb-rates.service >/dev/null
       systemctl enable cnb-rates.service >/dev/null
-      schedule="30 14 * * * set -a; . /etc/init/cnb-rates.conf; set +a; systemd-cat -t \"cnb-rates-unit\" /openbank/services/cnb-rates/cnb-rates-unit"
+
+      ontime="30 14 * * * set -a; . /etc/init/cnb-rates.conf; set +a; systemd-cat -t \"cnb-rates-unit\" /openbank/services/cnb-rates/cnb-rates-unit"
+      onstart="@reboot set -a; . /etc/init/cnb-rates.conf; set +a; systemd-cat -t \"cnb-rates-unit\" /openbank/services/cnb-rates/cnb-rates-unit"
       crontab -l | grep -v '/openbank/services/cnb-rates/cnb-rates-unit' | crontab -
-      crontab -l | { cat; echo "${schedule}"; } | crontab -
+      crontab -l | { cat; echo "${onstart}"; echo "${ontime}"; } | crontab -
+
       (systemctl start cnb-rates.service >/dev/null || :)
     else
       (>&2 echo "/etc/init/cnb-rates.conf file not found")

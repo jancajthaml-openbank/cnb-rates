@@ -5,19 +5,33 @@ set -e
 case "$1" in
 
   purge)
+    systemctl stop cnb-rates-rest.service
+    systemctl stop cnb-rates-import.service
     systemctl stop cnb-rates.service
+
     systemctl disable cnb-rates.service
-    crontab -l | grep -v '/openbank/services/cnb-rates/cnb-rates-unit' | crontab -
+    systemctl disable cnb-rates-import.service
+    systemctl disable cnb-rates-rest.service
+
+    crontab -l | grep -v 'cnb-rates-import' | crontab -
     (rm /lib/systemd/system/cnb-rates.service || :)
-    (rm /lib/systemd/system/cnb-rates.service || :)
+
+    (rm /lib/systemd/system/cnb-rates-import.service || :)
+    (rm /lib/systemd/system/cnb-rates-import.path || :)
+
+    (rm /lib/systemd/system/cnb-rates-rest.service || :)
+    (rm /lib/systemd/system/cnb-rates-rest.path || :)
+
     (rm /etc/init/cnb-rates.conf || :)
-    (rm /opt/cnb-rates/metrics/metrics.json || :)
+
     systemctl daemon-reload
     systemctl reset-failed
   ;;
 
   remove)
     systemctl mask cnb-rates.service
+    systemctl mask cnb-rates-import.service
+    systemctl mask cnb-rates-rest.service
   ;;
 
   upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)

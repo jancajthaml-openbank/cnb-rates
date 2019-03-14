@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/jancajthaml-openbank/cnb-rates-unit/boot"
+	"github.com/jancajthaml-openbank/cnb-rates-import/boot"
 )
 
 func main() {

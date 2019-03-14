@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-unit/config"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -1,0 +1,8 @@
+[Unit]
+Description=openbank CNB Rates Import service
+
+[Path]
+PathChanged=/etc/init/cnb-rates.conf
+
+[Install]
+WantedBy=cnb-rates.service

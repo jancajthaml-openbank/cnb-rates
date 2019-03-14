@@ -20,9 +20,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jancajthaml-openbank/cnb-rates-unit/config"
-	"github.com/jancajthaml-openbank/cnb-rates-unit/daemon"
-	"github.com/jancajthaml-openbank/cnb-rates-unit/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-import/config"
+	"github.com/jancajthaml-openbank/cnb-rates-import/daemon"
+	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 	log "github.com/sirupsen/logrus"

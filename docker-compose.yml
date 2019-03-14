@@ -13,7 +13,7 @@ services:
     image: openbankdev/cnb_rates_base
     volumes:
       - .:/project
-      - ./services/cnb-rates-unit:/go/src/github.com/jancajthaml-openbank/cnb-rates-unit
+      - ./services/cnb-rates-import:/go/src/github.com/jancajthaml-openbank/cnb-rates-import
       - ./services/cnb-rates-rest:/go/src/github.com/jancajthaml-openbank/cnb-rates-rest
     working_dir: /project
     environment:

@@ -21,11 +21,12 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-unit/config"
-	"github.com/jancajthaml-openbank/cnb-rates-unit/http"
-	"github.com/jancajthaml-openbank/cnb-rates-unit/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-import/config"
+	"github.com/jancajthaml-openbank/cnb-rates-import/http"
+	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 	log "github.com/sirupsen/logrus"
@@ -70,12 +71,15 @@ func (cnb CNBRatesImport) syncOtherRatesMonthly() error {
 		for {
 			select {
 
-			case <-cnb.Done():
-				return
 			case date, ok := <-queue:
 				if !ok {
 					return
 				}
+				if cnb.ctx.Err() != nil {
+					wg.Done()
+					continue
+				}
+
 				// FIXME to function that accepts wg reference
 				cachePath := utils.MonthlyCachePath(date)
 
@@ -96,20 +100,14 @@ func (cnb CNBRatesImport) syncOtherRatesMonthly() error {
 				)
 
 				uri := cnb.cnbGateway + utils.GetUrlForDateOtherFx(date)
-				err = utils.Retry(10, time.Second, func() (err error) {
-					response, code, err = cnb.httpClient.Get(uri)
-					if code != 200 && err == nil {
-						err = fmt.Errorf("%s error %d %+v", uri, code, string(response))
-					}
-					return
-				})
 
-				if err != nil {
-					log.Warnf("CNB cloud error %d %+v", code, err)
+				response, code, err = cnb.httpClient.Get(uri)
+				if code != 200 && err == nil {
+					log.Warnf("CNB cloud error %d %+v", code, string(response))
 					wg.Done()
 					continue
-				} else if code != 200 {
-					log.Warnf("CNB cloud error %d %+v", code, string(response))
+				} else if err != nil {
+					log.Warnf("CNB cloud error %d %+v", code, err)
 					wg.Done()
 					continue
 				}
@@ -166,12 +164,16 @@ func (cnb CNBRatesImport) syncMainRatesDaily() error {
 		worker := func() {
 			for {
 				select {
-				case <-cnb.Done():
-					return
+
 				case date, ok := <-queue:
 					if !ok {
 						return
 					}
+					if cnb.ctx.Err() != nil {
+						wg.Done()
+						continue
+					}
+
 					// FIXME to function that accepts wg reference
 					cachePath := utils.DailyCachePath(date)
 
@@ -192,20 +194,13 @@ func (cnb CNBRatesImport) syncMainRatesDaily() error {
 					)
 
 					uri := cnb.cnbGateway + utils.GetUrlForDateMainFx(date)
-					err = utils.Retry(10, time.Second, func() (err error) {
-						response, code, err = cnb.httpClient.Get(uri)
-						if code != 200 && err == nil {
-							err = fmt.Errorf("%s error %d %+v", uri, code, string(response))
-						}
-						return
-					})
-
-					if err != nil {
-						log.Warnf("CNB cloud error %d %+v", code, err)
+					response, code, err = cnb.httpClient.Get(uri)
+					if code != 200 && err == nil {
+						log.Warnf("CNB cloud error %d %+v", code, string(response))
 						wg.Done()
 						continue
-					} else if code != 200 {
-						log.Warnf("CNB cloud error %d %+v", code, string(response))
+					} else if err != nil {
+						log.Warnf("CNB cloud error %d %+v", code, err)
 						wg.Done()
 						continue
 					}
@@ -261,20 +256,11 @@ func (cnb CNBRatesImport) syncMainRatesDaily() error {
 	)
 
 	uri := cnb.cnbGateway + utils.GetUrlForDateMainFx(now)
-	err = utils.Retry(10, time.Second, func() (err error) {
-		response, code, err = cnb.httpClient.Get(uri)
-		if code == 200 {
-			return
-		} else if code >= 500 && err == nil {
-			err = fmt.Errorf("%s error %d %+v", uri, code, string(response))
-		}
-		return
-	})
-
-	if err != nil {
-		return fmt.Errorf("CNB cloud error %d %+v", code, err)
-	} else if code != 200 && code != 409 {
+	response, code, err = cnb.httpClient.Get(uri)
+	if code != 200 && err == nil {
 		return fmt.Errorf("CNB cloud error %d %+v", code, string(response))
+	} else if err != nil {
+		return fmt.Errorf("CNB cloud error %d %+v", code, err)
 	}
 
 	if !validateRates(now, response) {
@@ -347,7 +333,7 @@ func (cnb CNBRatesImport) WaitReady(deadline time.Duration) (err error) {
 		err = nil
 		return
 	case <-ticker.C:
-		err = fmt.Errorf("daemon was not ready within %v seconds", deadline)
+		err = fmt.Errorf("cnb-rates-import daemon was not ready within %v seconds", deadline)
 		return
 	}
 }
@@ -362,6 +348,7 @@ func (cnb CNBRatesImport) Start() {
 	cnb.importRoundtrip()
 
 	log.Info("Stopping cnb-rates-import daemon")
+	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 	log.Info("Stop cnb-rates-import daemon")
 
 	return

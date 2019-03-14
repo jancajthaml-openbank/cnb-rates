@@ -18,7 +18,7 @@ package:
 .PHONY: bundle-binaries
 bundle-binaries:
 	@echo "[info] packaging binaries for linux/amd64"
-	@docker-compose run --rm package --arch linux/amd64 --pkg cnb-rates-unit
+	@docker-compose run --rm package --arch linux/amd64 --pkg cnb-rates-import
 	@docker-compose run --rm package --arch linux/amd64 --pkg cnb-rates-rest
 
 .PHONY: bundle-debian
@@ -32,30 +32,30 @@ bootstrap:
 
 .PHONY: lint
 lint:
-	@docker-compose run --rm lint --pkg cnb-rates-unit || :
+	@docker-compose run --rm lint --pkg cnb-rates-import || :
 	@docker-compose run --rm lint --pkg cnb-rates-rest || :
 
 .PHONY: sec
 sec:
-	@docker-compose run --rm sec --pkg cnb-rates-unit || :
+	@docker-compose run --rm sec --pkg cnb-rates-import || :
 	@docker-compose run --rm sec --pkg cnb-rates-rest || :
 
 .PHONY: sync
 sync:
-	@echo "[info] sync cnb-rates-unit"
-	@docker-compose run --rm sync --pkg cnb-rates-unit
+	@echo "[info] sync cnb-rates-import"
+	@docker-compose run --rm sync --pkg cnb-rates-import
 	@echo "[info] sync cnb-rates-rest"
 	@docker-compose run --rm sync --pkg cnb-rates-rest
 
 .PHONY: update
 update:
-	@docker-compose run --rm update --pkg cnb-rates-unit
+	@docker-compose run --rm update --pkg cnb-rates-import
 	@docker-compose run --rm update --pkg cnb-rates-rest
 
 .PHONY: test
 test:
-	@echo "[info] test cnb-rates-unit"
-	@docker-compose run --rm test --pkg cnb-rates-unit
+	@echo "[info] test cnb-rates-import"
+	@docker-compose run --rm test --pkg cnb-rates-import
 	@echo "[info] test cnb-rates-rest"
 	@docker-compose run --rm test --pkg cnb-rates-rest
 

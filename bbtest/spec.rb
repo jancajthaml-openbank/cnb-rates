@@ -8,6 +8,7 @@ Thread.abort_on_exception = true
 RSpec.configure do |config|
   config.raise_error_for_unimplemented_steps = true
   config.color = true
+  config.fail_fast = true
 
   Dir.glob("./helpers/*_helper.rb") { |f| load f }
   config.include EventuallyHelper, :type => :feature
@@ -60,8 +61,6 @@ RSpec.configure do |config|
       %x(journalctl -o short-precise -u #{e}.service --no-pager > /reports/#{e}.log 2>&1)
     } unless ids.empty?
 
-    %x(journalctl -o short-precise -ex --no-pager > /reports/all.log 2>&1)
-    %x(journalctl -o short-precise -t cnb-rates-unit --no-pager > /reports/cnb-rates-unit.log 2>&1)
 
     CNBHelper.stop()
 

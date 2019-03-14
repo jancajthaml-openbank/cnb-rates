@@ -95,25 +95,25 @@ jobs:
           command: |
             mkdir -p /go/src/github.com/jancajthaml-openbank
             cp -r /home/circleci/project/services/cnb-rates-rest /go/src/github.com/jancajthaml-openbank/cnb-rates-rest
-            cp -r /home/circleci/project/services/cnb-rates-unit /go/src/github.com/jancajthaml-openbank/cnb-rates-unit
+            cp -r /home/circleci/project/services/cnb-rates-import /go/src/github.com/jancajthaml-openbank/cnb-rates-import
       - run:
           name: sync dependencies
           command: |
             ./dev/lifecycle/sync --pkg cnb-rates-rest
-            ./dev/lifecycle/sync --pkg cnb-rates-unit
+            ./dev/lifecycle/sync --pkg cnb-rates-import
       - run:
           name: move vendor folder to project
           command: |
             cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-rest/vendor /home/circleci/project/services/cnb-rates-rest/vendor
-            cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-unit/vendor /home/circleci/project/services/cnb-rates-unit/vendor
+            cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-import/vendor /home/circleci/project/services/cnb-rates-import/vendor
       - run:
-          name: unit test cnb-rates-rest
+          name: import test cnb-rates-rest
           command: |
             ./dev/lifecycle/test --pkg cnb-rates-rest
       - run:
-          name: unit test cnb-rates-unit
+          name: unit test cnb-rates-import
           command: |
-            ./dev/lifecycle/test --pkg cnb-rates-unit
+            ./dev/lifecycle/test --pkg cnb-rates-import
 
   # -------------------------------------------------------------------------- #
 
@@ -130,22 +130,22 @@ jobs:
           command: |
             mkdir -p /go/src/github.com/jancajthaml-openbank
             cp -r /home/circleci/project/services/cnb-rates-rest /go/src/github.com/jancajthaml-openbank/cnb-rates-rest
-            cp -r /home/circleci/project/services/cnb-rates-unit /go/src/github.com/jancajthaml-openbank/cnb-rates-unit
+            cp -r /home/circleci/project/services/cnb-rates-import /go/src/github.com/jancajthaml-openbank/cnb-rates-import
       - run:
           name: sync dependencies
           command: |
             ./dev/lifecycle/sync --pkg cnb-rates-rest
-            ./dev/lifecycle/sync --pkg cnb-rates-unit
+            ./dev/lifecycle/sync --pkg cnb-rates-import
       - run:
           name: move vendor folder to project
           command: |
             cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-rest/vendor /home/circleci/project/services/cnb-rates-rest/vendor
-            cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-unit/vendor /home/circleci/project/services/cnb-rates-unit/vendor
+            cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-import/vendor /home/circleci/project/services/cnb-rates-import/vendor
       - run:
-          name: package binary of cnb-rates-unit
+          name: package binary of cnb-rates-import
           command: |
-            ./dev/lifecycle/package --arch linux/amd64 --pkg cnb-rates-unit
-            ./dev/lifecycle/package --arch linux/armhf --pkg cnb-rates-unit
+            ./dev/lifecycle/package --arch linux/amd64 --pkg cnb-rates-import
+            ./dev/lifecycle/package --arch linux/armhf --pkg cnb-rates-import
       - run:
           name: package binary of cnb-rates-rest
           command: |
@@ -257,9 +257,9 @@ jobs:
           keys:
             - cnb-rates-binaries-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_TAG }}
       - run: if [ ! -f ./packaging/bin/cnb-rates-rest-linux-amd64 ] ; then exit 1 ; fi
-      - run: if [ ! -f ./packaging/bin/cnb-rates-unit-linux-amd64 ] ; then exit 1 ; fi
+      - run: if [ ! -f ./packaging/bin/cnb-rates-import-linux-amd64 ] ; then exit 1 ; fi
       - run: if [ ! -f ./packaging/bin/cnb-rates-rest-linux-armhf ] ; then exit 1 ; fi
-      - run: if [ ! -f ./packaging/bin/cnb-rates-unit-linux-armhf ] ; then exit 1 ; fi
+      - run: if [ ! -f ./packaging/bin/cnb-rates-import-linux-armhf ] ; then exit 1 ; fi
       - run: if [ ! -f ./packaging/bin/cnb-rates_${CIRCLE_TAG#v}_amd64.deb ] ; then exit 1 ; fi
       - run: if [ ! -f ./packaging/bin/cnb-rates_${CIRCLE_TAG#v}_armhf.deb ] ; then exit 1 ; fi
       - deploy:
