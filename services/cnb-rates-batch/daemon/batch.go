@@ -71,12 +71,12 @@ func (batch Batch) WaitReady(deadline time.Duration) (err error) {
 
 // Start handles everything needed to start batch daemon
 func (batch Batch) Start() {
-	defer cnb.MarkDone()
+	defer batch.MarkDone()
 
 	log.Info("Start cnb-rates-batch daemon")
-	cnb.MarkReady()
+	batch.MarkReady()
 
-	batch.importRoundtrip()
+	//batch.importRoundtrip()
 
 	log.Info("Stopping cnb-rates-batch daemon")
 	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)

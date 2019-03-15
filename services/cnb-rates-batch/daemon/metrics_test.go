@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetFilename(t *testing.T) {
-	assert.Equal(t, "/a/b/c.d", getFilename("/a/b/c.d"))
+	assert.Equal(t, "/a/b/c.batch.d", getFilename("/a/b/c.d"))
 }
 
 func TestMetricsPersist(t *testing.T) {

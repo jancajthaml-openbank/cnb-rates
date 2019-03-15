@@ -7,10 +7,12 @@ case "$1" in
   purge)
     systemctl stop cnb-rates-rest.service
     systemctl stop cnb-rates-import.service
+    systemctl stop cnb-rates-batch.service
     systemctl stop cnb-rates.service
 
     systemctl disable cnb-rates.service
     systemctl disable cnb-rates-import.service
+    systemctl disable cnb-rates-batch.service
     systemctl disable cnb-rates-rest.service
 
     crontab -l | grep -v 'cnb-rates-import' | crontab -
@@ -18,6 +20,9 @@ case "$1" in
 
     (rm /lib/systemd/system/cnb-rates-import.service || :)
     (rm /lib/systemd/system/cnb-rates-import.path || :)
+
+    (rm /lib/systemd/system/cnb-rates-batch.service || :)
+    (rm /lib/systemd/system/cnb-rates-batch.path || :)
 
     (rm /lib/systemd/system/cnb-rates-rest.service || :)
     (rm /lib/systemd/system/cnb-rates-rest.path || :)
@@ -31,6 +36,7 @@ case "$1" in
   remove)
     systemctl mask cnb-rates.service
     systemctl mask cnb-rates-import.service
+    systemctl mask cnb-rates-batch.service
     systemctl mask cnb-rates-rest.service
   ;;
 

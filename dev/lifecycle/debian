@@ -115,6 +115,11 @@ if [ ! -f "${BIN_SOURCES}/cnb-rates-import-linux-${TARGET_ARCHITECTURE}" ] ; the
   exit 1
 fi
 
+if [ ! -f "${BIN_SOURCES}/cnb-rates-batch-linux-${TARGET_ARCHITECTURE}" ] ; then
+  (>&2 echo "did not found binary to package at ${BIN_SOURCES}/cnb-rates-batch-linux-${TARGET_ARCHITECTURE}")
+  exit 1
+fi
+
 if [ ! -f "${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}" ] ; then
   (>&2 echo "did not found binary to package at ${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}")
   exit 1
@@ -130,8 +135,13 @@ if [ -f "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-rest" ] ; then
   rm -f ${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-rest
 fi
 
+if [ -f "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-batch" ] ; then
+  rm -f ${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-batch
+fi
+
 du -hs "${BIN_SOURCES}/cnb-rates-import-linux-${TARGET_ARCHITECTURE}"
 du -hs "${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}"
+du -hs "${BIN_SOURCES}/cnb-rates-batch-linux-${TARGET_ARCHITECTURE}"
 
 cp \
   "${BIN_SOURCES}/cnb-rates-import-linux-${TARGET_ARCHITECTURE}" \
@@ -141,8 +151,13 @@ cp \
   "${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}" \
   "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-rest"
 
+cp \
+  "${BIN_SOURCES}/cnb-rates-batch-linux-${TARGET_ARCHITECTURE}" \
+  "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-batch"
+
 file "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-import"
 file "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-rest"
+file "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-batch"
 
 generate_changelog
 sed -i 's/Version.*/Version: '${VERSION#v}'/' ${CONTROL}

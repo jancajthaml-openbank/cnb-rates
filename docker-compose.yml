@@ -15,6 +15,7 @@ services:
       - .:/project
       - ./services/cnb-rates-import:/go/src/github.com/jancajthaml-openbank/cnb-rates-import
       - ./services/cnb-rates-rest:/go/src/github.com/jancajthaml-openbank/cnb-rates-rest
+      - ./services/cnb-rates-batch:/go/src/github.com/jancajthaml-openbank/cnb-rates-batch
     working_dir: /project
     environment:
       - GOOS

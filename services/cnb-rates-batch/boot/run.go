@@ -21,6 +21,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/daemon"
 
 	log "github.com/sirupsen/logrus"
@@ -77,14 +78,17 @@ func (app Application) Run() {
 		log.Errorf("Error when starting daemons: %+v", err)
 	} else {
 		log.Info(">>> Started <<<")
+		utils.NotifyServiceReady()
 		signal.Notify(app.interrupt, syscall.SIGINT, syscall.SIGTERM)
 		app.WaitInterrupt()
 	}
 
 	log.Info(">>> Stopping <<<")
+	utils.NotifyServiceStopping()
 
 	app.batch.Stop()
 	app.metrics.Stop()
+
 
 	app.cancel()
 	log.Info(">>> Stop <<<")

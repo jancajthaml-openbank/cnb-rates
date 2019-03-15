@@ -104,7 +104,7 @@ func getFilename(path string) string {
 	filename := filepath.Base(path)
 	filename = filename[:len(filename)-len(ext)]
 
-	return dirname + "/" + filename + ext
+	return dirname + "/" + filename + ".batch" + ext
 }
 
 // WaitReady wait for metrics to be ready
