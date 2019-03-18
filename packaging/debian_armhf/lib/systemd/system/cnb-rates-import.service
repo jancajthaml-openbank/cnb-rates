@@ -1,13 +1,13 @@
 [Unit]
-Description=openbank CNB Rates Batch service
+Description=openbank CNB Rates Import service
 PartOf=cnb-rates.service
-After=cnb-rates-import.service
+After=cnb-rates.service
 
 [Service]
 Type=notify
 EnvironmentFile=/etc/init/cnb-rates.conf
 StartLimitBurst=0
-ExecStart=/openbank/services/cnb-rates/cnb-rates-batch
+ExecStart=/openbank/services/cnb-rates/cnb-rates-import
 StandardInput=null
 LimitNOFILE=1048576
 LimitNPROC=infinity
@@ -19,4 +19,4 @@ TimeoutSec=infinity
 KillMode=process
 
 [Install]
-WantedBy=cnb-rates-import.service
+WantedBy=cnb-rates.service

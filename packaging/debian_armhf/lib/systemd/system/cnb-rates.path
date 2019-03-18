@@ -1,5 +1,6 @@
 [Unit]
-Description=openbank CNB Rates Import service
+Description=openbank CNB Rates services namespace
+PartOf=cnb-rates.service
 
 [Path]
 PathChanged=/etc/init/cnb-rates.conf

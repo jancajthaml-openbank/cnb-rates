@@ -6,15 +6,21 @@ case "$1" in
 
   configure)
     if [ -f "/etc/init/cnb-rates.conf" ] ; then
-      systemctl unmask cnb-rates.service >/dev/null
-      systemctl unmask cnb-rates-rest.service >/dev/null
-      systemctl unmask cnb-rates-import.service >/dev/null
-      systemctl unmask cnb-rates-batch.service >/dev/null
+      systemctl unmask \
+        cnb-rates.path \
+        cnb-rates-rest.service \
+        cnb-rates-import.service \
+        cnb-rates-batch.service \
+        cnb-rates.service \
+      >/dev/null
 
-      systemctl enable cnb-rates.service >/dev/null
-      systemctl enable cnb-rates-rest.service >/dev/null
-      systemctl enable cnb-rates-import.service >/dev/null
-      systemctl enable cnb-rates-batch.service >/dev/null
+      systemctl enable \
+        cnb-rates.path \
+        cnb-rates-import.service \
+        cnb-rates-rest.service \
+        cnb-rates-batch.service \
+        cnb-rates.service \
+      >/dev/null
 
       ontime="30 14 * * * set -a; systemctl start cnb-rates-import"
       crontab -l | grep -v 'cnb-rates-import' | crontab -

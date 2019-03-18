@@ -131,16 +131,19 @@ jobs:
             mkdir -p /go/src/github.com/jancajthaml-openbank
             cp -r /home/circleci/project/services/cnb-rates-rest /go/src/github.com/jancajthaml-openbank/cnb-rates-rest
             cp -r /home/circleci/project/services/cnb-rates-import /go/src/github.com/jancajthaml-openbank/cnb-rates-import
+            cp -r /home/circleci/project/services/cnb-rates-batch /go/src/github.com/jancajthaml-openbank/cnb-rates-batch
       - run:
           name: sync dependencies
           command: |
             ./dev/lifecycle/sync --pkg cnb-rates-rest
             ./dev/lifecycle/sync --pkg cnb-rates-import
+            ./dev/lifecycle/sync --pkg cnb-rates-batch
       - run:
           name: move vendor folder to project
           command: |
             cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-rest/vendor /home/circleci/project/services/cnb-rates-rest/vendor
             cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-import/vendor /home/circleci/project/services/cnb-rates-import/vendor
+            cp -r /go/src/github.com/jancajthaml-openbank/cnb-rates-batch/vendor /home/circleci/project/services/cnb-rates-batch/vendor
       - run:
           name: package binary of cnb-rates-import
           command: |
@@ -151,6 +154,11 @@ jobs:
           command: |
             ./dev/lifecycle/package --arch linux/amd64 --pkg cnb-rates-rest
             ./dev/lifecycle/package --arch linux/armhf --pkg cnb-rates-rest
+      - run:
+          name: package binary of cnb-rates-batch
+          command: |
+            ./dev/lifecycle/package --arch linux/amd64 --pkg cnb-rates-batch
+            ./dev/lifecycle/package --arch linux/armhf --pkg cnb-rates-batch
       - run:
           name: Package debian of cnb-rates
           command: |
@@ -258,8 +266,10 @@ jobs:
             - cnb-rates-binaries-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_TAG }}
       - run: if [ ! -f ./packaging/bin/cnb-rates-rest-linux-amd64 ] ; then exit 1 ; fi
       - run: if [ ! -f ./packaging/bin/cnb-rates-import-linux-amd64 ] ; then exit 1 ; fi
+      - run: if [ ! -f ./packaging/bin/cnb-rates-batch-linux-amd64 ] ; then exit 1 ; fi
       - run: if [ ! -f ./packaging/bin/cnb-rates-rest-linux-armhf ] ; then exit 1 ; fi
       - run: if [ ! -f ./packaging/bin/cnb-rates-import-linux-armhf ] ; then exit 1 ; fi
+      - run: if [ ! -f ./packaging/bin/cnb-rates-batch-linux-armhf ] ; then exit 1 ; fi
       - run: if [ ! -f ./packaging/bin/cnb-rates_${CIRCLE_TAG#v}_amd64.deb ] ; then exit 1 ; fi
       - run: if [ ! -f ./packaging/bin/cnb-rates_${CIRCLE_TAG#v}_armhf.deb ] ; then exit 1 ; fi
       - deploy:

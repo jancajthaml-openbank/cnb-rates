@@ -1,6 +1,5 @@
 [Unit]
 Description=openbank CNB Rates Batch service
-PartOf=cnb-rates.service
 After=cnb-rates-import.service
 
 [Service]
