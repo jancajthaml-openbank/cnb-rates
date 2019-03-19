@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-unit/config"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetFilename(t *testing.T) {
-	assert.Equal(t, "/a/b/c.d", getFilename("/a/b/c.d"))
+	assert.Equal(t, "/a/b/c.batch.d", getFilename("/a/b/c.d"))
 }
 
 func TestMetricsPersist(t *testing.T) {

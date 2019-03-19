@@ -128,7 +128,7 @@ func (server Server) WaitReady(deadline time.Duration) (err error) {
 		err = nil
 		return
 	case <-ticker.C:
-		err = fmt.Errorf("daemon was not ready within %v seconds", deadline)
+		err = fmt.Errorf("http-server daemon was not ready within %v seconds", deadline)
 		return
 	}
 }

@@ -15,24 +15,34 @@
 package utils
 
 import (
-	"fmt"
-	"time"
+	"net"
+	"os"
 )
 
-// Retry retries for maximum of N attempts with backoff after each error
-func Retry(attempts int, sleep time.Duration, callback func() error) (err error) {
-	for i := 0; ; i++ {
-		err = callback()
-		if err == nil {
-			return
-		}
-
-		if i >= (attempts - 1) {
-			break
-		}
-
-		time.Sleep(sleep)
+func systemNotify(state string) {
+	socketAddr := &net.UnixAddr{
+		Name: os.Getenv("NOTIFY_SOCKET"),
+		Net:  "unixgram",
 	}
 
-	return fmt.Errorf("after %d attempts, last error: %s", attempts, err)
+	if socketAddr.Name == "" {
+		return
+	}
+
+	conn, err := net.DialUnix(socketAddr.Net, nil, socketAddr)
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+	conn.Write([]byte(state))
+}
+
+// NotifyServiceReady notify underlying os that service is ready
+func NotifyServiceReady() {
+	systemNotify("READY=1")
+}
+
+// NotifyServiceStopping notify underlying os that service is stopping
+func NotifyServiceStopping() {
+	systemNotify("STOPPING=1")
 }

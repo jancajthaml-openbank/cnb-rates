@@ -1,0 +1,22 @@
+[Unit]
+Description=openbank CNB Rates REST service
+PartOf=cnb-rates.service
+After=cnb-rates.service
+
+[Service]
+Type=notify
+EnvironmentFile=/etc/init/cnb-rates.conf
+StartLimitBurst=0
+ExecStart=/openbank/services/cnb-rates/cnb-rates-rest
+StandardInput=null
+LimitNOFILE=1048576
+LimitNPROC=infinity
+LimitCORE=infinity
+Restart=always
+RestartSec=0
+TimeoutStartSec=0
+TimeoutSec=infinity
+KillMode=process
+
+[Install]
+WantedBy=cnb-rates.service

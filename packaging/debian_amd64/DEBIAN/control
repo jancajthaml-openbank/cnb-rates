@@ -1,9 +1,9 @@
 Package: cnb-rates
-Version: 0.0.0+stability
+Version: 0.0.0+synchronize-on-boot
 Architecture: amd64
 Maintainer: Jan Cajthaml <jan.cajthaml@gmail.com>
 Depends: init-system-helpers (>= 1.18~), openssl (>= 1.1~)
 Section: openbank
 Priority: extra
 Vcs-Git: git@github.com:jancajthaml-openbank/cnb-rates.git
-Description: Openbank CNB Rates Import
+Description: Openbank CNB Exchange Rates Mirror

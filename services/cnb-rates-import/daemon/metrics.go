@@ -21,8 +21,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-unit/config"
-	"github.com/jancajthaml-openbank/cnb-rates-unit/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-import/config"
+	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
 
 	metrics "github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
@@ -104,7 +104,7 @@ func getFilename(path string) string {
 	filename := filepath.Base(path)
 	filename = filename[:len(filename)-len(ext)]
 
-	return dirname + "/" + filename + ext
+	return dirname + "/" + filename + ".import" + ext
 }
 
 // WaitReady wait for metrics to be ready

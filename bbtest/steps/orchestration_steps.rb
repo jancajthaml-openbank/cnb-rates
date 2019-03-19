@@ -5,7 +5,7 @@ step "cnb-rates is restarted" do ||
   expect($?).to be_success, ids
 
   ids = ids.split("\n").map(&:strip).reject { |x|
-    x.empty? || !x.start_with?("cnb-rates")
+    x.empty? || !x.start_with?("cnb-rates-")
   }.map { |x| x.chomp(".service") }
 
   expect(ids).not_to be_empty
@@ -13,8 +13,6 @@ step "cnb-rates is restarted" do ||
   ids.each { |e|
     %x(systemctl restart #{e} 2>&1)
   }
-
-  ids << "cnb-rates"
 
   eventually() {
     ids.each { |e|
@@ -29,11 +27,20 @@ step "cnb-rates is running with mocked CNB Gateway" do ||
     "CNB_GATEWAY=https://localhost:4000"
   ].join("\n")
 
+  ts = if defined? @timeshift then @timeshift else Date.today end
+  formatted = ts.strftime("%Y-%m-%d %H:%M:%S")
+
+  %x(timedatectl set-ntp 0)
+  %x(timedatectl set-local-rtc 0)
+  %x(timedatectl set-time "#{formatted}")
+  expect($?).to be_success, "failed to set time to #{formatted}"
+  %x(systemctl restart cron)
   send "cnb-rates is reconfigured with", params
+
 end
 
 step "cnb-rates is reconfigured with" do |configuration|
-  params = Hash[configuration.split("\n").map(&:strip).reject(&:empty?).map {|el| el.split '='}]
+  params = Hash[configuration.split("\n").map(&:strip).reject(&:empty?).map { |el| el.split '=' }]
 
   defaults = {
     "STORAGE" => "/data",
@@ -55,7 +62,7 @@ step "cnb-rates is reconfigured with" do |configuration|
   expect($?).to be_success, ids
 
   ids = ids.split("\n").map(&:strip).reject { |x|
-    x.empty? || !x.start_with?("cnb-rates")
+    x.empty? || !x.start_with?("cnb-rates-")
   }.map { |x| x.chomp(".service") }
 
   ids.each { |e|

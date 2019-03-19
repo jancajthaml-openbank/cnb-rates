@@ -20,9 +20,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jancajthaml-openbank/cnb-rates-unit/config"
-	"github.com/jancajthaml-openbank/cnb-rates-unit/daemon"
-	"github.com/jancajthaml-openbank/cnb-rates-unit/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/daemon"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 	log "github.com/sirupsen/logrus"
@@ -33,7 +33,7 @@ type Application struct {
 	cfg       config.Configuration
 	interrupt chan os.Signal
 	metrics   daemon.Metrics
-	cnb       daemon.CNBRatesImport
+	batch     daemon.Batch
 	cancel    context.CancelFunc
 }
 
@@ -69,13 +69,13 @@ func Initialize() Application {
 
 	storage := localfs.NewStorage(cfg.RootStorage)
 
-	cnb := daemon.NewCNBRatesImport(ctx, cfg, &metrics, &storage)
+	batch := daemon.NewBatch(ctx, cfg, &metrics, &storage)
 
 	return Application{
 		cfg:       cfg,
 		interrupt: make(chan os.Signal, 1),
 		metrics:   metrics,
-		cnb:       cnb,
+		batch:     batch,
 		cancel:    cancel,
 	}
 }

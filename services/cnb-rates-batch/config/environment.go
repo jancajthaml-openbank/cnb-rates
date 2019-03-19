@@ -23,7 +23,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/jancajthaml-openbank/cnb-rates-unit/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
 )
 
 func loadConfFromEnv() Configuration {

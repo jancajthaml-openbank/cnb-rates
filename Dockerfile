@@ -23,9 +23,11 @@ RUN \
     if \
       \
       [ ! -f /opt/artifacts/cnb-rates-rest-linux-amd64 ] || \
-      [ ! -f /opt/artifacts/cnb-rates-unit-linux-amd64 ] || \
+      [ ! -f /opt/artifacts/cnb-rates-import-linux-amd64 ] || \
+      [ ! -f /opt/artifacts/cnb-rates-batch-linux-amd64 ] || \
       [ ! -f /opt/artifacts/cnb-rates-rest-linux-armhf ] || \
-      [ ! -f /opt/artifacts/cnb-rates-unit-linux-armhf ] || \
+      [ ! -f /opt/artifacts/cnb-rates-import-linux-armhf ] || \
+      [ ! -f /opt/artifacts/cnb-rates-batch-linux-armhf ] || \
       \
       [ -z "$(find . /opt/artifacts -type f -name 'cnb-rates_*_amd64.deb' -print)" ] || \
       [ -z "$(find /opt/artifacts -type f -name 'cnb-rates_*_armhf.deb' -print)" ] \

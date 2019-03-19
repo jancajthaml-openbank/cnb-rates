@@ -21,7 +21,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-unit/daemon"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/daemon"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -51,7 +52,7 @@ func (app Application) WaitReady(deadline time.Duration) error {
 
 	wg.Add(2)
 	waitWithDeadline(app.metrics)
-	waitWithDeadline(app.cnb)
+	waitWithDeadline(app.batch)
 	wg.Wait()
 
 	if len(errors) > 0 {
@@ -71,20 +72,23 @@ func (app Application) Run() {
 	log.Info(">>> Start <<<")
 
 	go app.metrics.Start()
-	go app.cnb.Start()
+	go app.batch.Start()
 
 	if err := app.WaitReady(5 * time.Second); err != nil {
 		log.Errorf("Error when starting daemons: %+v", err)
 	} else {
 		log.Info(">>> Started <<<")
+		utils.NotifyServiceReady()
 		signal.Notify(app.interrupt, syscall.SIGINT, syscall.SIGTERM)
 		app.WaitInterrupt()
 	}
 
 	log.Info(">>> Stopping <<<")
+	utils.NotifyServiceStopping()
 
-	app.cnb.Stop()
+	app.batch.Stop()
 	app.metrics.Stop()
+
 
 	app.cancel()
 	log.Info(">>> Stop <<<")
