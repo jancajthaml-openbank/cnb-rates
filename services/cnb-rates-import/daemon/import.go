@@ -52,15 +52,177 @@ func NewCNBRatesImport(ctx context.Context, cfg config.Configuration, metrics *M
 	}
 }
 
-func (cnb CNBRatesImport) syncOtherRatesMonthly() error {
-	now := time.Now()
+func (cnb CNBRatesImport) syncMainRatesToday(today time.Time) error {
+	cachePath := utils.DailyCachePath(today)
 
-	startDate := time.Date(1991, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
-	endDate := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	ok, err := cnb.storage.Exists(cachePath)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return nil
+	}
 
-	dates := utils.GetMonthsBetween(startDate, endDate)
+	var (
+		response []byte
+		code     int
+	)
 
-	if len(dates) == 0 {
+	uri := cnb.cnbGateway + utils.GetUrlForDateMainFx(today)
+	response, code, err = cnb.httpClient.Get(uri)
+	if code != 200 && err == nil {
+		return fmt.Errorf("CNB cloud error %d %+v", code, string(response))
+	} else if err != nil {
+		return fmt.Errorf("CNB cloud error %d %+v", code, err)
+	}
+
+	if !validateRates(today, response) {
+		return fmt.Errorf("bounce %s", today.Format("02.01.2006"))
+	}
+
+	if cnb.storage.WriteFile(cachePath, response) != nil {
+		return fmt.Errorf("cannot store cache for %s at %s", today.Format("02.01.2006"), cachePath)
+	}
+
+	return nil
+}
+
+func (cnb CNBRatesImport) syncOtherRatesMonthly(month time.Time) error {
+	//now := time.Now()
+
+	//startDate := time.Date(1991, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
+	//endDate := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+
+	//dates := utils.GetMonthsBetween(startDate, endDate)
+
+	//if len(dates) == 0 {
+	//return nil
+	//}
+
+	/*
+		var wg sync.WaitGroup
+		queue := make(chan time.Time, 128)
+
+		worker := func() {
+			for {
+				select {
+
+				case date, ok := <-queue:
+					if !ok {
+						return
+					}
+					if cnb.ctx.Err() != nil {
+						wg.Done()
+						continue
+					}
+
+					// FIXME to function that accepts wg reference
+					cachePath := utils.MonthlyCachePath(date)
+
+					ok, err := cnb.storage.Exists(cachePath)
+					if err != nil {
+						log.Warnf("corrupted cache at %s with %+v", cachePath, err)
+						wg.Done()
+						continue
+					}
+					if ok {
+						wg.Done()
+						continue
+					}
+
+					var (
+						response []byte
+						code     int
+					)
+
+					uri := cnb.cnbGateway + utils.GetUrlForDateOtherFx(date)
+
+					response, code, err = cnb.httpClient.Get(uri)
+					if code != 200 && err == nil {
+						log.Warnf("CNB cloud error %d %+v", code, string(response))
+						wg.Done()
+						continue
+					} else if err != nil {
+						log.Warnf("CNB cloud error %d %+v", code, err)
+						wg.Done()
+						continue
+					}
+
+					if cnb.storage.WriteFile(cachePath, response) != nil {
+						log.Warnf("cannot store cache for %s at %s", date, cachePath)
+						wg.Done()
+						continue
+					}
+
+					log.Debugf("downloaded other fx for date %s", date.Format("01.2006"))
+					wg.Done()
+				}
+			}
+		}
+
+		for i := 0; i < 4*runtime.NumCPU(); i++ {
+			go worker()
+		}
+
+		for _, date := range dates {
+			cachePath := utils.MonthlyCachePath(date)
+			ok, err := cnb.storage.Exists(cachePath)
+			if err != nil {
+				log.Warnf("corrupted cache at %s with %+v", cachePath, err)
+				continue
+			}
+			if ok {
+				continue
+			}
+
+			wg.Add(1)
+			queue <- date
+		}
+
+		wg.Wait()
+		close(queue)
+
+
+		month
+	*/
+
+	cachePath := utils.MonthlyCachePath(month)
+
+	ok, err := cnb.storage.Exists(cachePath)
+	if err != nil {
+		return fmt.Errorf("corrupted cache at %s with %+v", cachePath, err)
+	}
+
+	if ok {
+		return nil
+	}
+
+	var (
+		response []byte
+		code     int
+	)
+
+	uri := cnb.cnbGateway + utils.GetUrlForDateOtherFx(month)
+
+	response, code, err = cnb.httpClient.Get(uri)
+	if code != 200 && err == nil {
+		return fmt.Errorf("CNB cloud error %d %+v", code, string(response))
+	}
+	if err != nil {
+		return fmt.Errorf("CNB cloud error %d %+v", code, err)
+	}
+
+	if cnb.storage.WriteFile(cachePath, response) != nil {
+		return fmt.Errorf("cannot store cache for %s at %s", month, cachePath)
+	}
+
+	log.Debugf("downloaded other fx for date %s", month.Format("01.2006"))
+
+	return nil
+}
+
+func (cnb CNBRatesImport) syncMainRatesDaily(days []time.Time) error {
+	if len(days) == 0 {
 		return nil
 	}
 
@@ -81,12 +243,12 @@ func (cnb CNBRatesImport) syncOtherRatesMonthly() error {
 				}
 
 				// FIXME to function that accepts wg reference
-				cachePath := utils.MonthlyCachePath(date)
+				cachePath := utils.DailyCachePath(date)
 
 				ok, err := cnb.storage.Exists(cachePath)
 				if err != nil {
-					log.Warnf("corrupted cache at %s with %+v", cachePath, err)
 					wg.Done()
+					log.Warnf("corrupted cache at %s with %+v", cachePath, err)
 					continue
 				}
 				if ok {
@@ -99,8 +261,7 @@ func (cnb CNBRatesImport) syncOtherRatesMonthly() error {
 					code     int
 				)
 
-				uri := cnb.cnbGateway + utils.GetUrlForDateOtherFx(date)
-
+				uri := cnb.cnbGateway + utils.GetUrlForDateMainFx(date)
 				response, code, err = cnb.httpClient.Get(uri)
 				if code != 200 && err == nil {
 					log.Warnf("CNB cloud error %d %+v", code, string(response))
@@ -118,7 +279,7 @@ func (cnb CNBRatesImport) syncOtherRatesMonthly() error {
 					continue
 				}
 
-				log.Debugf("downloaded other fx for date %s", date.Format("01.2006"))
+				log.Debugf("downloaded main fx for date %s", date.Format("02.01.2006"))
 				wg.Done()
 			}
 		}
@@ -128,8 +289,8 @@ func (cnb CNBRatesImport) syncOtherRatesMonthly() error {
 		go worker()
 	}
 
-	for _, date := range dates {
-		cachePath := utils.MonthlyCachePath(date)
+	for _, day := range days {
+		cachePath := utils.DailyCachePath(day)
 		ok, err := cnb.storage.Exists(cachePath)
 		if err != nil {
 			log.Warnf("corrupted cache at %s with %+v", cachePath, err)
@@ -140,136 +301,11 @@ func (cnb CNBRatesImport) syncOtherRatesMonthly() error {
 		}
 
 		wg.Add(1)
-		queue <- date
+		queue <- day
 	}
 
 	wg.Wait()
 	close(queue)
-
-	return nil
-}
-
-func (cnb CNBRatesImport) syncMainRatesDaily() error {
-	now := time.Now()
-
-	startDate := time.Date(1991, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
-	endDate := now.AddDate(0, 0, -1)
-
-	dates := utils.GetDatesBetween(startDate, endDate)
-
-	if len(dates) > 0 {
-		var wg sync.WaitGroup
-		queue := make(chan time.Time, 128)
-
-		worker := func() {
-			for {
-				select {
-
-				case date, ok := <-queue:
-					if !ok {
-						return
-					}
-					if cnb.ctx.Err() != nil {
-						wg.Done()
-						continue
-					}
-
-					// FIXME to function that accepts wg reference
-					cachePath := utils.DailyCachePath(date)
-
-					ok, err := cnb.storage.Exists(cachePath)
-					if err != nil {
-						wg.Done()
-						log.Warnf("corrupted cache at %s with %+v", cachePath, err)
-						continue
-					}
-					if ok {
-						wg.Done()
-						continue
-					}
-
-					var (
-						response []byte
-						code     int
-					)
-
-					uri := cnb.cnbGateway + utils.GetUrlForDateMainFx(date)
-					response, code, err = cnb.httpClient.Get(uri)
-					if code != 200 && err == nil {
-						log.Warnf("CNB cloud error %d %+v", code, string(response))
-						wg.Done()
-						continue
-					} else if err != nil {
-						log.Warnf("CNB cloud error %d %+v", code, err)
-						wg.Done()
-						continue
-					}
-
-					if cnb.storage.WriteFile(cachePath, response) != nil {
-						log.Warnf("cannot store cache for %s at %s", date, cachePath)
-						wg.Done()
-						continue
-					}
-
-					log.Debugf("downloaded main fx for date %s", date.Format("02.01.2006"))
-					wg.Done()
-				}
-			}
-		}
-
-		for i := 0; i < 4*runtime.NumCPU(); i++ {
-			go worker()
-		}
-
-		for _, date := range dates {
-			cachePath := utils.DailyCachePath(date)
-			ok, err := cnb.storage.Exists(cachePath)
-			if err != nil {
-				log.Warnf("corrupted cache at %s with %+v", cachePath, err)
-				continue
-			}
-			if ok {
-				continue
-			}
-
-			wg.Add(1)
-			queue <- date
-		}
-
-		wg.Wait()
-		close(queue)
-	}
-
-	cachePath := utils.DailyCachePath(now)
-
-	ok, err := cnb.storage.Exists(cachePath)
-	if err != nil {
-		return err
-	}
-	if ok {
-		return nil
-	}
-
-	var (
-		response []byte
-		code     int
-	)
-
-	uri := cnb.cnbGateway + utils.GetUrlForDateMainFx(now)
-	response, code, err = cnb.httpClient.Get(uri)
-	if code != 200 && err == nil {
-		return fmt.Errorf("CNB cloud error %d %+v", code, string(response))
-	} else if err != nil {
-		return fmt.Errorf("CNB cloud error %d %+v", code, err)
-	}
-
-	if !validateRates(now, response) {
-		return fmt.Errorf("bounce %s", now.Format("02.01.2006"))
-	}
-
-	if cnb.storage.WriteFile(cachePath, response) != nil {
-		return fmt.Errorf("cannot store cache for %s at %s", now.Format("02.01.2006"), cachePath)
-	}
 
 	return nil
 }
@@ -304,11 +340,37 @@ func validateRates(date time.Time, data []byte) bool {
 }
 
 func (cnb CNBRatesImport) importRoundtrip() {
-	log.Debug("Synchonizing main currencies fx daily rates")
-	cnb.syncMainRatesDaily()
+	now := time.Now()
 
-	log.Debug("Synchonizing other currencies fx monthly rates")
-	cnb.syncOtherRatesMonthly()
+	if err := cnb.syncMainRatesToday(now); err != nil {
+		log.Warnf(err.Error())
+	}
+
+	startDate := time.Date(1991, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
+	endDate := now.AddDate(0, 0, -1)
+
+	months := utils.GetMonthsBetween(startDate, endDate)
+	for _, month := range months {
+		if cnb.ctx.Err() != nil {
+			return
+		}
+
+		currentMonth := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, startDate.Location())
+		nextMonth := time.Date(month.Year(), month.Month()+1, 0, 0, 0, 0, 0, startDate.Location())
+		nextMonth.AddDate(0, 1, 0).Add(time.Nanosecond * -1)
+
+		log.Debugf("Synchonizing other currencies fx monthly rates for %s", currentMonth.Format("01.2006"))
+
+		if err := cnb.syncOtherRatesMonthly(currentMonth); err != nil {
+			log.Warnf(err.Error())
+		}
+
+		days := utils.GetDatesBetween(currentMonth, nextMonth)
+		if len(days) > 2 {
+			log.Debugf("Synchonizing main currencies fx daily rates from %s to %s", days[0].Format("02.01.2006"), days[len(days)-1].Format("02.01.2006"))
+			cnb.syncMainRatesDaily(days)
+		}
+	}
 }
 
 // WaitReady wait for cnb rates import to be ready
