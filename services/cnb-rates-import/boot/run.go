@@ -67,6 +67,12 @@ func (app Application) WaitInterrupt() {
 	<-app.interrupt
 }
 
+// GreenLight daemons
+func (app Application) GreenLight() {
+	app.metrics.GreenLight()
+	app.cnb.GreenLight()
+}
+
 // Run runs the application
 func (app Application) Run() {
 	log.Info(">>> Start <<<")
@@ -78,6 +84,7 @@ func (app Application) Run() {
 		log.Errorf("Error when starting daemons: %+v", err)
 	} else {
 		log.Info(">>> Started <<<")
+		app.GreenLight()
 		utils.NotifyServiceReady()
 		signal.Notify(app.interrupt, syscall.SIGINT, syscall.SIGTERM)
 		app.WaitInterrupt()
