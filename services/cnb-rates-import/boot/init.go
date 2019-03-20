@@ -66,9 +66,7 @@ func Initialize() Application {
 	}
 
 	metrics := daemon.NewMetrics(ctx, cfg)
-
 	storage := localfs.NewStorage(cfg.RootStorage)
-
 	cnb := daemon.NewCNBRatesImport(ctx, cfg, &metrics, &storage)
 
 	return Application{
