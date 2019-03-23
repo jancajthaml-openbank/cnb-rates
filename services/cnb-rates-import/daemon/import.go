@@ -52,8 +52,8 @@ func NewCNBRatesImport(ctx context.Context, cfg config.Configuration, metrics *M
 	}
 }
 
-func (cnb CNBRatesImport) syncMainRatesToday(today time.Time) error {
-	cachePath := utils.DailyCachePath(today)
+func (cnb CNBRatesImport) syncMainRateToday(today time.Time) error {
+	cachePath := utils.FXMainOfflinePath(today)
 	if ok, err := cnb.storage.Exists(cachePath); err != nil {
 		return err
 	} else if ok {
@@ -80,15 +80,15 @@ func (cnb CNBRatesImport) syncMainRatesToday(today time.Time) error {
 	return nil
 }
 
-func (cnb CNBRatesImport) syncOtherRatesMonthly(month time.Time) error {
-	cachePath := utils.MonthlyCachePath(month)
+func (cnb CNBRatesImport) syncOtherRates(day time.Time) error {
+	cachePath := utils.FXOtherOfflinePath(day)
 	if ok, err := cnb.storage.Exists(cachePath); err != nil {
 		return fmt.Errorf("corrupted cache at %s with %+v", cachePath, err)
 	} else if ok {
 		return nil
 	}
 
-	uri := cnb.cnbGateway + utils.GetUrlForDateOtherFx(month)
+	uri := cnb.cnbGateway + utils.GetUrlForDateOtherFx(day)
 	response, code, err := cnb.httpClient.Get(uri)
 	if code != 200 && err == nil {
 		return fmt.Errorf("CNB cloud error %d %+v", code, string(response))
@@ -98,14 +98,14 @@ func (cnb CNBRatesImport) syncOtherRatesMonthly(month time.Time) error {
 	}
 
 	if cnb.storage.WriteFile(cachePath, response) != nil {
-		return fmt.Errorf("cannot store cache for %s at %s", month, cachePath)
+		return fmt.Errorf("cannot store cache for %s at %s", day, cachePath)
 	}
 
-	log.Debugf("downloaded other fx for month %s", month.Format("01.2006"))
+	log.Infof("downloaded other fx for %s", day.Format("02.01.2006"))
 	return nil
 }
 
-func (cnb CNBRatesImport) syncMainRatesDaily(days []time.Time) error {
+func (cnb CNBRatesImport) syncMainRates(days []time.Time) error {
 	if len(days) == 0 {
 		return nil
 	}
@@ -127,7 +127,7 @@ func (cnb CNBRatesImport) syncMainRatesDaily(days []time.Time) error {
 				}
 
 				// FIXME to function that accepts wg reference
-				cachePath := utils.DailyCachePath(date)
+				cachePath := utils.FXMainOfflinePath(date)
 
 				ok, err := cnb.storage.Exists(cachePath)
 				if err != nil {
@@ -163,7 +163,7 @@ func (cnb CNBRatesImport) syncMainRatesDaily(days []time.Time) error {
 					continue
 				}
 
-				log.Debugf("downloaded main fx for day %s", date.Format("02.01.2006"))
+				log.Infof("downloaded main fx for day %s", date.Format("02.01.2006"))
 				wg.Done()
 			}
 		}
@@ -174,7 +174,7 @@ func (cnb CNBRatesImport) syncMainRatesDaily(days []time.Time) error {
 	}
 
 	for _, day := range days {
-		cachePath := utils.DailyCachePath(day)
+		cachePath := utils.FXMainOfflinePath(day)
 		ok, err := cnb.storage.Exists(cachePath)
 		if err != nil {
 			log.Warnf("corrupted cache at %s with %+v", cachePath, err)
@@ -226,7 +226,7 @@ func validateRates(date time.Time, data []byte) bool {
 func (cnb CNBRatesImport) importRoundtrip() {
 	now := time.Now()
 
-	if err := cnb.syncMainRatesToday(now); err != nil {
+	if err := cnb.syncMainRateToday(now); err != nil {
 		log.Warnf(err.Error())
 	}
 
@@ -245,19 +245,23 @@ func (cnb CNBRatesImport) importRoundtrip() {
 		nextMonth := time.Date(month.Year(), month.Month()+1, 0, 0, 0, 0, 0, startDate.Location())
 		nextMonth.AddDate(0, 1, 0).Add(time.Nanosecond * -1)
 
-		log.Debugf("Synchonizing other currencies fx monthly rates for %s", currentMonth.Format("01.2006"))
-
-		if err := cnb.syncOtherRatesMonthly(currentMonth); err != nil {
-			log.Warnf(err.Error())
-		}
-
 		days := utils.GetDatesBetween(currentMonth, nextMonth)
 		if len(days) <= 2 {
 			continue
 		}
 
-		log.Debugf("Synchonizing main currencies fx daily rates from %s to %s", days[0].Format("02.01.2006"), days[len(days)-1].Format("02.01.2006"))
-		cnb.syncMainRatesDaily(days)
+		if currentMonth.Year() > 2003 {
+			lastDay := days[len(days)-1]
+
+			log.Debugf("Synchonizing other fx rates for %s", lastDay.Format("02.01.2006"))
+			// FIXME must be last day of `currentMonth` for ther fx fates
+			if err := cnb.syncOtherRates(lastDay); err != nil {
+				log.Warnf(err.Error())
+			}
+		}
+
+		log.Debugf("Synchonizing main fx rates from %s to %s", days[0].Format("02.01.2006"), days[len(days)-1].Format("02.01.2006"))
+		cnb.syncMainRates(days)
 	}
 }
 

@@ -2,12 +2,15 @@
 Description=openbank CNB Rates Import service
 PartOf=cnb-rates.service
 After=cnb-rates.service
+RefuseManualStart=true
+ConditionPathExists=/etc/init/cnb-rates.conf
 
 [Service]
 Type=notify
 EnvironmentFile=/etc/init/cnb-rates.conf
 StartLimitBurst=0
 ExecStart=/openbank/services/cnb-rates/cnb-rates-import
+ExecStopPost=/bin/systemctl start cnb-rates-batch
 StandardInput=null
 LimitNOFILE=1048576
 LimitNPROC=infinity

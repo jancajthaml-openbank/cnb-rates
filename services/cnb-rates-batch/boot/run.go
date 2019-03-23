@@ -21,8 +21,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/daemon"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -62,6 +62,12 @@ func (app Application) WaitReady(deadline time.Duration) error {
 	return nil
 }
 
+// GreenLight daemons
+func (app Application) GreenLight() {
+	app.metrics.GreenLight()
+	app.batch.GreenLight()
+}
+
 // WaitInterrupt wait for signal
 func (app Application) WaitInterrupt() {
 	<-app.interrupt
@@ -79,6 +85,7 @@ func (app Application) Run() {
 	} else {
 		log.Info(">>> Started <<<")
 		utils.NotifyServiceReady()
+		app.GreenLight()
 		signal.Notify(app.interrupt, syscall.SIGINT, syscall.SIGTERM)
 		app.WaitInterrupt()
 	}
@@ -88,7 +95,6 @@ func (app Application) Run() {
 
 	app.batch.Stop()
 	app.metrics.Stop()
-
 
 	app.cancel()
 	log.Info(">>> Stop <<<")

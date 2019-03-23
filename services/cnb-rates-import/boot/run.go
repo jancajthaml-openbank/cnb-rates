@@ -62,15 +62,15 @@ func (app Application) WaitReady(deadline time.Duration) error {
 	return nil
 }
 
-// WaitInterrupt wait for signal
-func (app Application) WaitInterrupt() {
-	<-app.interrupt
-}
-
 // GreenLight daemons
 func (app Application) GreenLight() {
 	app.metrics.GreenLight()
 	app.cnb.GreenLight()
+}
+
+// WaitInterrupt wait for signal
+func (app Application) WaitInterrupt() {
+	<-app.interrupt
 }
 
 // Run runs the application

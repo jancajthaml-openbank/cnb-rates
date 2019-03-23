@@ -38,14 +38,13 @@ RSpec.configure do |config|
     print "\n[ suite ending   ]\n"
 
     [
-      "cnb-rates-rest",
-      "cnb-rates-import",
       "cnb-rates-batch",
+      "cnb-rates-import",
+      "cnb-rates-rest",
       "cnb-rates",
     ].each { |e|
       %x(journalctl -o short-precise -u #{e}.service --no-pager > /reports/#{e}.log 2>&1)
       %x(systemctl stop #{e} 2>&1)
-      %x(systemctl disable #{e} 2>&1)
       %x(journalctl -o short-precise -u #{e}.service --no-pager > /reports/#{e}.log 2>&1)
     }
 

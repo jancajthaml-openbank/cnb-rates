@@ -17,10 +17,12 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 	log "github.com/sirupsen/logrus"
@@ -69,14 +71,142 @@ func (batch Batch) WaitReady(deadline time.Duration) (err error) {
 	}
 }
 
+/*
+func (batch Batch) ProcessNewMonthly() {
+	log.Infof("Processing new Monthly rates")
+
+	monthlyUnprocessed, _ := utils.GetMonthlyUnprocessedFiles(batch.storage)
+	log.Info("Monthly")
+	log.Infof("Unprocessed: %+v", monthlyUnprocessed)
+
+}
+*/
+
+func (batch Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
+	defer wg.Done()
+	log.Info("Processing new main-fx rates")
+
+	days, err := utils.GetFXMainUnprocessedFiles(batch.storage)
+	if err != nil {
+		return err
+	}
+
+	cachePath := utils.FXMainOfflineDirectory() + "/"
+
+	for _, day := range days {
+		if batch.ctx.Err() != nil {
+			return nil
+		}
+
+		log.Infof("Processing new main-fx for %s", day)
+
+		reader, err := batch.storage.GetFileReader(cachePath + day)
+		if err != nil {
+			log.Warnf("error parse main-fx CSV data for day %s, %+v\n", day, err)
+			continue
+		}
+
+		result, err := utils.ParseCSV(day, reader)
+		if err != nil {
+			log.Warnf("error parse main-fx CSV data for day %s, %+v\n", day, err)
+			continue
+		}
+
+		bytes, err := result.MarshalJSON()
+		if err != nil {
+			log.Warnf("error marshall main-fx data for day %s, %+v\n", day, err)
+			continue
+		}
+
+		err = batch.storage.WriteFile(utils.FXMainDailyCachePath(result.Date), bytes)
+		if err != nil {
+			log.Warnf("error write cache fail main-fx data for day %s, %+v\n", day, err)
+			continue
+		}
+
+		log.Infof("parsed main-fx CSV data for day %s\n", day)
+	}
+
+	return nil
+}
+
+func (batch Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
+	defer wg.Done()
+
+	log.Info("Processing new other-fx rates")
+
+	days, err := utils.GetFXOtherUnprocessedFiles(batch.storage)
+	if err != nil {
+		return err
+	}
+
+	cachePath := utils.FXOtherOfflineDirectory() + "/"
+
+	for _, day := range days {
+		if batch.ctx.Err() != nil {
+			return nil
+		}
+
+		log.Infof("Processing new other-fx for %s", day)
+
+		reader, err := batch.storage.GetFileReader(cachePath + day)
+		if err != nil {
+			log.Warnf("error parse other-fx CSV data for day %s, %+v\n", day, err)
+			continue
+		}
+
+		result, err := utils.ParseCSV(day, reader)
+		if err != nil {
+			log.Warnf("error parse other-fx CSV data for day %s, %+v\n", day, err)
+			continue
+		}
+
+		bytes, err := result.MarshalJSON()
+		if err != nil {
+			log.Warnf("error marshall other-fx data for mo %s, %+v\n", day, err)
+			continue
+		}
+
+		err = batch.storage.WriteFile(utils.FXOtherMonthlyCachePath(result.Date), bytes)
+		if err != nil {
+			log.Warnf("error write cache fail other-fx data for day %s, %+v\n", day, err)
+			continue
+		}
+
+		log.Infof("parsed other-fx CSV data for day %s\n", day)
+	}
+
+	return nil
+}
+
+func (batch Batch) ProcessNewFX() {
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	batch.ProcessNewFXMain(&wg)
+
+	wg.Add(1)
+	batch.ProcessNewFXOther(&wg)
+
+	wg.Wait()
+}
+
 // Start handles everything needed to start batch daemon
 func (batch Batch) Start() {
 	defer batch.MarkDone()
 
-	log.Info("Start cnb-rates-batch daemon")
 	batch.MarkReady()
 
-	//batch.importRoundtrip()
+	select {
+	case <-batch.canStart:
+		break
+	case <-batch.Done():
+		return
+	}
+
+	log.Info("Start cnb-rates-batch daemon")
+
+	batch.ProcessNewFX()
 
 	log.Info("Stopping cnb-rates-batch daemon")
 	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)

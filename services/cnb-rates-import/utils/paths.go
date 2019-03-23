@@ -24,18 +24,18 @@ func GetUrlForDateOtherFx(date time.Time) string {
 	return "/en/financial_markets/foreign_exchange_market/other_currencies_fx_rates/fx_rates.txt?month=" + date.Format("01") + "&year=" + date.Format("2006")
 }
 
-func DailyCacheDirectory() string {
-	return "raw/daily/fx-main"
+func FXMainOfflineDirectory() string {
+	return "raw/fx-main"
 }
 
-func MonthlyCacheDirectory() string {
-	return "raw/monthly/fx-other"
+func FXOtherOfflineDirectory() string {
+	return "raw/fx-other"
 }
 
-func DailyCachePath(date time.Time) string {
-	return DailyCacheDirectory() + "/" + date.Format("02.01.2006")
+func FXMainOfflinePath(date time.Time) string {
+	return FXMainOfflineDirectory() + "/" + date.Format("02.01.2006")
 }
 
-func MonthlyCachePath(date time.Time) string {
-	return MonthlyCacheDirectory() + "/" + date.Format("01.2006")
+func FXOtherOfflinePath(date time.Time) string {
+	return FXOtherOfflineDirectory() + "/" + date.Format("02.01.2006")
 }

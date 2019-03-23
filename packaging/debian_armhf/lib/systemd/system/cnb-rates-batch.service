@@ -1,6 +1,7 @@
 [Unit]
 Description=openbank CNB Rates Batch service
-After=cnb-rates-import.service
+PartOf=cnb-rates.service
+ConditionPathExists=/etc/init/cnb-rates.conf
 
 [Service]
 Type=notify
@@ -18,4 +19,4 @@ TimeoutSec=infinity
 KillMode=process
 
 [Install]
-WantedBy=cnb-rates-import.service
+WantedBy=cnb-rates.service
