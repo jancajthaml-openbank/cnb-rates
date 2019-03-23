@@ -1,6 +1,7 @@
 [Unit]
 Description=openbank CNB Rates services namespace
 PartOf=cnb-rates.service
+ConditionPathExists=/etc/init/cnb-rates.conf
 
 [Path]
 PathChanged=/etc/init/cnb-rates.conf

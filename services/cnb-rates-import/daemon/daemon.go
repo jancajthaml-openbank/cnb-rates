@@ -45,14 +45,14 @@ type Support struct {
 	canStart   chan interface{}
 }
 
-// MarkDone signals daemon is finished
-func (s Support) MarkDone() {
-	close(s.exitSignal)
-}
-
 // GreenLight signals daemon to start work
 func (s Support) GreenLight() {
 	s.canStart <- nil
+}
+
+// MarkDone signals daemon is finished
+func (s Support) MarkDone() {
+	close(s.exitSignal)
 }
 
 // MarkReady signals daemon is ready

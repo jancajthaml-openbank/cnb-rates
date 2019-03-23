@@ -18,7 +18,6 @@ case "$1" in
         cnb-rates.path \
         cnb-rates-import.service \
         cnb-rates-rest.service \
-        cnb-rates-batch.service \
         cnb-rates.service \
       >/dev/null
 

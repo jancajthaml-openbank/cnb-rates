@@ -16,26 +16,58 @@ package utils
 
 import "time"
 
-func GetUrlForDateMainFx(date time.Time) string {
-	return "/en/financial_markets/foreign_exchange_market/exchange_rate_fixing/daily.txt?date=" + date.Format("02.01.2006")
+func FXMainDailyCacheDirectory() string {
+	return "processed/fx-main/d"
 }
 
-func GetUrlForDateOtherFx(date time.Time) string {
-	return "/en/financial_markets/foreign_exchange_market/other_currencies_fx_rates/fx_rates.txt?month=" + date.Format("01") + "&year=" + date.Format("2006")
+func FXMainMonthlyCacheDirectory() string {
+	return "processed/fx-main/m"
 }
 
-func DailyCacheDirectory() string {
-	return "raw/daily/fx-main"
+func FXMainYearlyCacheDirectory() string {
+	return "processed/fx-main/y"
 }
 
-func MonthlyCacheDirectory() string {
-	return "raw/monthly/fx-other"
+func FXOtherMonthlyCacheDirectory() string {
+	return "processed/fx-other/m"
 }
 
-func DailyCachePath(date time.Time) string {
-	return DailyCacheDirectory() + "/" + date.Format("02.01.2006")
+func FXOtherYearlyCacheDirectory() string {
+	return "processed/fx-other/y"
 }
 
-func MonthlyCachePath(date time.Time) string {
-	return MonthlyCacheDirectory() + "/" + date.Format("01.2006")
+func FXMainDailyCachePath(date time.Time) string {
+	return FXMainDailyCacheDirectory() + "/" + date.Format("02.01.2006")
+}
+
+func FXMainMonthlyCachePath(date time.Time) string {
+	return FXMainMonthlyCacheDirectory() + "/" + date.Format("01.2006")
+}
+
+func FXMainYearlyCachePath(date time.Time) string {
+	return FXMainYearlyCacheDirectory() + "/" + date.Format("2006")
+}
+
+func FXOtherMonthlyCachePath(date time.Time) string {
+	return FXOtherMonthlyCacheDirectory() + "/" + date.Format("01.2006")
+}
+
+func FXOtherYearlyCachePath(date time.Time) string {
+	return FXOtherYearlyCacheDirectory() + "/" + date.Format("2006")
+}
+
+func FXMainOfflineDirectory() string {
+	return "raw/fx-main"
+}
+
+func FXOtherOfflineDirectory() string {
+	return "raw/fx-other"
+}
+
+func FXMainOfflinePath(date time.Time) string {
+	return FXMainOfflineDirectory() + "/" + date.Format("02.01.2006")
+}
+
+func FXOtherOfflinePath(date time.Time) string {
+	return FXOtherOfflineDirectory() + "/" + date.Format("02.01.2006")
 }

@@ -2,6 +2,7 @@
 Description=openbank CNB Rates REST service
 PartOf=cnb-rates.service
 After=cnb-rates.service
+ConditionPathExists=/etc/init/cnb-rates.conf
 
 [Service]
 Type=notify

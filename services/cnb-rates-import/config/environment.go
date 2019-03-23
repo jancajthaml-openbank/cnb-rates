@@ -34,8 +34,6 @@ func loadConfFromEnv() Configuration {
 	metricsOutput := getEnvString("CNB_RATES_METRICS_OUTPUT", "")
 	metricsRefreshRate := getEnvDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
 
-	// FIXME freeze start time (now) to config
-
 	if rootStorage == "" {
 		log.Fatal("missing required parameter to run")
 	}
@@ -46,12 +44,12 @@ func loadConfFromEnv() Configuration {
 		log.Fatal("unable to assert metrics output")
 	}
 
-	if os.MkdirAll(rootStorage+"/"+utils.DailyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert daily cache directory")
+	if os.MkdirAll(rootStorage+"/"+utils.FXMainOfflineDirectory(), os.ModePerm) != nil {
+		log.Fatal("unable to assert daily offline directory")
 	}
 
-	if os.MkdirAll(rootStorage+"/"+utils.MonthlyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert monthly cache directory")
+	if os.MkdirAll(rootStorage+"/"+utils.FXOtherOfflineDirectory(), os.ModePerm) != nil {
+		log.Fatal("unable to assert monthly offline directory")
 	}
 
 	return Configuration{
