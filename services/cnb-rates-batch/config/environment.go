@@ -58,8 +58,12 @@ func loadConfFromEnv() Configuration {
 		log.Fatal("unable to assert main-fx yearly cache directory")
 	}
 
+	if os.MkdirAll(rootStorage+"/"+utils.FXOtherDailyCacheDirectory(), os.ModePerm) != nil {
+		log.Fatal("unable to assert other-fx daily cache directory")
+	}
+
 	if os.MkdirAll(rootStorage+"/"+utils.FXOtherMonthlyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert other-fx yearly cache directory")
+		log.Fatal("unable to assert other-fx monthly cache directory")
 	}
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXOtherYearlyCacheDirectory(), os.ModePerm) != nil {
