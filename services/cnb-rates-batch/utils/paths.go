@@ -69,5 +69,5 @@ func FXMainOfflinePath(date time.Time) string {
 }
 
 func FXOtherOfflinePath(date time.Time) string {
-	return FXOtherOfflineDirectory() + "/" + date.Format("02.01.2006")
+	return FXOtherOfflineDirectory() + "/" + date.Format("01.2006")
 }
