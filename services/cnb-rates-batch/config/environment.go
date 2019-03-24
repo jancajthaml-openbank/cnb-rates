@@ -34,8 +34,6 @@ func loadConfFromEnv() Configuration {
 	metricsOutput := getEnvString("CNB_RATES_METRICS_OUTPUT", "")
 	metricsRefreshRate := getEnvDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
 
-	// FIXME freeze start time (now) to config
-
 	if rootStorage == "" {
 		log.Fatal("missing required parameter to run")
 	}
@@ -47,23 +45,27 @@ func loadConfFromEnv() Configuration {
 	}
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXMainDailyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert main-fx daily cache directory")
+		log.Fatal("unable to assert fx-main daily cache directory")
 	}
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXMainMonthlyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert main-fx monthly cache directory")
+		log.Fatal("unable to assert fx-main monthly cache directory")
 	}
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXMainYearlyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert main-fx yearly cache directory")
+		log.Fatal("unable to assert fx-main yearly cache directory")
+	}
+
+	if os.MkdirAll(rootStorage+"/"+utils.FXOtherDailyCacheDirectory(), os.ModePerm) != nil {
+		log.Fatal("unable to assert fx-other daily cache directory")
 	}
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXOtherMonthlyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert other-fx yearly cache directory")
+		log.Fatal("unable to assert fx-other monthly cache directory")
 	}
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXOtherYearlyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert other-fx yearly cache directory")
+		log.Fatal("unable to assert fx-other yearly cache directory")
 	}
 
 	return Configuration{
