@@ -28,6 +28,10 @@ func FXMainYearlyCacheDirectory() string {
 	return "processed/fx-main/y"
 }
 
+func FXOtherDailyCacheDirectory() string {
+	return "processed/fx-other/d"
+}
+
 func FXOtherMonthlyCacheDirectory() string {
 	return "processed/fx-other/m"
 }
@@ -46,6 +50,10 @@ func FXMainMonthlyCachePath(date time.Time) string {
 
 func FXMainYearlyCachePath(date time.Time) string {
 	return FXMainYearlyCacheDirectory() + "/" + date.Format("2006")
+}
+
+func FXOtherDailyCachePath(date time.Time) string {
+	return FXOtherDailyCacheDirectory() + "/" + date.Format("02.01.2006")
 }
 
 func FXOtherMonthlyCachePath(date time.Time) string {
@@ -69,5 +77,5 @@ func FXMainOfflinePath(date time.Time) string {
 }
 
 func FXOtherOfflinePath(date time.Time) string {
-	return FXOtherOfflineDirectory() + "/" + date.Format("01.2006")
+	return FXOtherOfflineDirectory() + "/" + date.Format("02.01.2006")
 }

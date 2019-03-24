@@ -167,7 +167,7 @@ func (batch Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
 			continue
 		}
 
-		err = batch.storage.WriteFile(utils.FXOtherMonthlyCachePath(result.Date), bytes)
+		err = batch.storage.WriteFile(utils.FXOtherDailyCachePath(result.Date), bytes)
 		if err != nil {
 			log.Warnf("error write cache fail other-fx data for day %s, %+v\n", day, err)
 			continue

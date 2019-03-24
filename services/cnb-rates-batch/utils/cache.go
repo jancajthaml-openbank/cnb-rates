@@ -106,7 +106,7 @@ func GetFXOtherUnprocessedFiles(storage *localfs.Storage) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	processed, err := storage.ListDirectory(FXMainMonthlyCacheDirectory(), true)
+	processed, err := storage.ListDirectory(FXOtherDailyCacheDirectory(), true)
 	if err != nil {
 		return nil, err
 	}

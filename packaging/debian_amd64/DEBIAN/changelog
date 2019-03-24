@@ -1,0 +1,9 @@
+cnb-rates (0.1.1) unstable; urgency=low
+
+  * Fixed fx-other offline and cache paths
+  * Batch processing fx-main and fx-other after import
+  * Start daemons after aplication starts
+  * Synchronize by months partition
+
+ -- Jan Cajthaml <jan.cajthaml@gmail.com>  Sun, 24 Mar 2019 03:20:17 +0100
+
