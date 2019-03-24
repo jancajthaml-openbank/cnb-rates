@@ -21,7 +21,7 @@ func GetUrlForDateMainFx(date time.Time) string {
 }
 
 func GetUrlForDateOtherFx(date time.Time) string {
-	return "/en/financial_markets/foreign_exchange_market/other_currencies_fx_rates/fx_rates.txt?month=" + date.Format("01") + "&year=" + date.Format("2006")
+	return "/en/financial_markets/foreign_exchange_market/other_currencies_fx_rates/fx_rates.txt?month=" + date.Format("1") + "&year=" + date.Format("2006")
 }
 
 func FXMainOfflineDirectory() string {
