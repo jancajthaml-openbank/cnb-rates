@@ -1,9 +1,12 @@
 cnb-rates (0.1.1) unstable; urgency=low
 
+  * No leading zero in query string for fx-other
+  * Update environment.go
+  * Fx-main as daily even if only day is synced
   * Fixed fx-other offline and cache paths
   * Batch processing fx-main and fx-other after import
   * Start daemons after aplication starts
   * Synchronize by months partition
 
- -- Jan Cajthaml <jan.cajthaml@gmail.com>  Sun, 24 Mar 2019 03:20:17 +0100
+ -- Jan Cajthaml <jan.cajthaml@gmail.com>  Sun, 24 Mar 2019 11:14:51 +0100
 

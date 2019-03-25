@@ -68,6 +68,7 @@ func (cnb CNBRatesImport) syncMainRateToday(today time.Time) error {
 		return fmt.Errorf("CNB cloud error %d %+v", code, err)
 	}
 
+	// FIXME try with backoff until hit
 	if !validateRates(today, response) {
 		return fmt.Errorf("today rate bounce %s", today.Format("02.01.2006"))
 	}
@@ -76,7 +77,7 @@ func (cnb CNBRatesImport) syncMainRateToday(today time.Time) error {
 		return fmt.Errorf("cannot store cache for %s at %s", today.Format("02.01.2006"), cachePath)
 	}
 
-	log.Debug("downloaded main fx for today")
+	log.Debug("downloaded fx-main for today")
 	return nil
 }
 
@@ -101,7 +102,7 @@ func (cnb CNBRatesImport) syncOtherRates(day time.Time) error {
 		return fmt.Errorf("cannot store cache for %s at %s", day, cachePath)
 	}
 
-	log.Infof("downloaded other fx for %s", day.Format("02.01.2006"))
+	log.Infof("downloaded fx-other for %s", day.Format("02.01.2006"))
 	return nil
 }
 
@@ -126,7 +127,6 @@ func (cnb CNBRatesImport) syncMainRates(days []time.Time) error {
 					continue
 				}
 
-				// FIXME to function that accepts wg reference
 				cachePath := utils.FXMainOfflinePath(date)
 
 				ok, err := cnb.storage.Exists(cachePath)
@@ -163,7 +163,7 @@ func (cnb CNBRatesImport) syncMainRates(days []time.Time) error {
 					continue
 				}
 
-				log.Infof("downloaded main fx for day %s", date.Format("02.01.2006"))
+				log.Infof("downloaded fx-main for day %s", date.Format("02.01.2006"))
 				wg.Done()
 			}
 		}
@@ -230,19 +230,18 @@ func (cnb CNBRatesImport) importRoundtrip() {
 		log.Warnf(err.Error())
 	}
 
-	// FIXME timeshift function
-	startDate := time.Date(1991, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
-	endDate := now.AddDate(0, 0, -1)
+	fxMainHistoryStart := time.Date(1991, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
+	fxOtherHistoryStart := time.Date(2004, time.Month(5), 1, 0, 0, 0, 0, time.UTC)
+	today := now.AddDate(0, 0, -1)
 
-	months := utils.GetMonthsBetween(startDate, endDate)
+	months := utils.GetMonthsBetween(fxMainHistoryStart, today)
 	for _, month := range months {
 		if cnb.ctx.Err() != nil {
 			return
 		}
 
-		// FIXME timeshift function
-		currentMonth := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, startDate.Location())
-		nextMonth := time.Date(month.Year(), month.Month()+1, 0, 0, 0, 0, 0, startDate.Location())
+		currentMonth := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, time.UTC)
+		nextMonth := time.Date(month.Year(), month.Month()+1, 0, 0, 0, 0, 0, time.UTC)
 		nextMonth.AddDate(0, 1, 0).Add(time.Nanosecond * -1)
 
 		days := utils.GetDatesBetween(currentMonth, nextMonth)
@@ -250,7 +249,7 @@ func (cnb CNBRatesImport) importRoundtrip() {
 			continue
 		}
 
-		if currentMonth.Year() > 2003 {
+		if !currentMonth.Before(fxOtherHistoryStart) {
 			lastDay := days[len(days)-1]
 
 			log.Debugf("Synchonizing other fx rates for %s", lastDay.Format("02.01.2006"))
