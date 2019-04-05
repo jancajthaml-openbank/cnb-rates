@@ -1,7 +1,7 @@
 module github.com/jancajthaml-openbank/bondster-bco/services/bondster-bco-rest
 
 require (
-	github.com/gorilla/mux v1.7.0
+	github.com/gorilla/mux v1.7.1
 	github.com/jancajthaml-openbank/local-fs v1.0.3
 	github.com/json-iterator/go v1.1.6
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
