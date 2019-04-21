@@ -17,7 +17,7 @@ package utils
 import "time"
 
 func GetUrlForDateMainFx(date time.Time) string {
-	return "/en/financial_markets/foreign_exchange_market/exchange_rate_fixing/daily.txt?date=" + date.Format("02.01.2006")
+	return "/en/financial_markets/foreign_exchange_market/exchange_rate_fixing/daily.txt?date=" + date.Format("02+01+2006")
 }
 
 func GetUrlForDateOtherFx(date time.Time) string {

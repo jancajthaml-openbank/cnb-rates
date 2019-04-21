@@ -34,4 +34,6 @@ RUN apt-get update && \
       init-system-helpers>=1.18~ \
       libzmq5>=4.2.1~
 
+RUN echo "127.0.0.1:4000  www.cnb.cz" >> /etc/hosts
+
 # ---------------------------------------------------------------------------- #

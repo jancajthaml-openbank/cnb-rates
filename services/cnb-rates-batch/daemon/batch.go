@@ -71,17 +71,6 @@ func (batch Batch) WaitReady(deadline time.Duration) (err error) {
 	}
 }
 
-/*
-func (batch Batch) ProcessNewMonthly() {
-	log.Infof("Processing new Monthly rates")
-
-	monthlyUnprocessed, _ := utils.GetMonthlyUnprocessedFiles(batch.storage)
-	log.Info("Monthly")
-	log.Infof("Unprocessed: %+v", monthlyUnprocessed)
-
-}
-*/
-
 func (batch Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
 	defer wg.Done()
 	log.Info("Processing new fx-main rates")

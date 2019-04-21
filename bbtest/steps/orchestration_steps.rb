@@ -24,7 +24,7 @@ end
 
 step "cnb-rates is running with mocked CNB Gateway" do ||
   params = [
-    "CNB_GATEWAY=https://localhost:4000"
+    "CNB_GATEWAY=https://127.0.0.1:4000"
   ].join("\n")
 
   ts = if defined? @timeshift then @timeshift else Date.today end
@@ -45,7 +45,7 @@ step "cnb-rates is reconfigured with" do |configuration|
   defaults = {
     "STORAGE" => "/data",
     "LOG_LEVEL" => "DEBUG",
-    "CNB_GATEWAY" => "https://localhost:4000",
+    "CNB_GATEWAY" => "https://127.0.0.1:4000",
     "METRICS_OUTPUT" => "/reports/metrics.json",
     "METRICS_REFRESHRATE" => "1h",
     "HTTP_PORT" => "443",
