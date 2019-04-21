@@ -52,7 +52,7 @@ func ParseCSV(filename string, rc io.Reader) (model.ExchangeFixing, error) {
 		return result, err
 	}
 	parts := strings.Split(dateLine[0], " #")
-	date, err := time.Parse("02.Jan 2006", parts[0])
+	date, err := time.Parse("02 Jan 2006", parts[0])
 	if err != nil {
 		return result, err
 	}

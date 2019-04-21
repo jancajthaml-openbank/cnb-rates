@@ -3,8 +3,6 @@ require 'date'
 require 'json-schema'
 require 'thread'
 require_relative '../shims/harden_webrick'
-require_relative './cnb_mock'
-
 
 class CNBGetDailyMainRates < WEBrick::HTTPServlet::AbstractServlet
 
@@ -19,13 +17,13 @@ class CNBGetDailyMainRates < WEBrick::HTTPServlet::AbstractServlet
     query = request.query()
 
     if query.has_key?('date')
-      for_date = Date.strptime(query['date'], "%d.%m.%Y")
+      for_date = Date.strptime(query['date'], "%d+%m+%Y")
     else
       for_date = Date.now
     end
 
     return 200, [
-      (for_date.strftime('%d.%b %Y') + " \#" + for_date.strftime('%j').to_i.to_s),
+      (for_date.strftime('%d %b %Y') + " \#" + for_date.strftime('%j').to_i.to_s),
       "Country|Currency|Amount|Code|Rate",
       "Israel|shekel|1|ILS|10",
       "Japan|yen|100|JPY|10"
@@ -52,7 +50,7 @@ class CNBGetOtherFXRates < WEBrick::HTTPServlet::AbstractServlet
     end
 
     return 200, [
-      (for_date.strftime('%d.%b %Y') + " \#" + for_date.strftime('%j').to_i.to_s),
+      (for_date.strftime('%d %b %Y') + " \#" + for_date.strftime('%j').to_i.to_s),
       "Country|Currency|Amount|Code|Rate",
       "Afghanistan|afghani|100|AFN|10",
       "Qatar|rial|1|QAR|10"

@@ -1,5 +1,5 @@
 Package: cnb-rates
-Version: 0.1.1+fx-other-starts-at-may-2004
+Version: 0.1.1+better-http-helper-bbtest
 Architecture: amd64
 Maintainer: Jan Cajthaml <jan.cajthaml@gmail.com>
 Depends: init-system-helpers (>= 1.18~), openssl (>= 1.1~)

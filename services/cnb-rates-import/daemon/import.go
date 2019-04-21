@@ -216,7 +216,7 @@ func validateRates(date time.Time, data []byte) bool {
 	}
 
 	parts := strings.Split(string(chunk[:j]), " #")
-	expected, err := time.Parse("02.Jan 2006", parts[0])
+	expected, err := time.Parse("02 Jan 2006", parts[0])
 	if err != nil {
 		return false
 	}
