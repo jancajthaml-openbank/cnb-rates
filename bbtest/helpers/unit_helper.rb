@@ -29,7 +29,6 @@ class UnitHelper
     %x(docker rm temp-container-cnb-rates)
 
     Dir.glob('/opt/artifacts/cnb-rates_*_amd64.deb').each { |f|
-      puts "#{f}"
       FileUtils.mv(f, '/etc/bbtest/packages/cnb-rates.deb')
     }
 
