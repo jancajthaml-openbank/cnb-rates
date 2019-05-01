@@ -14,6 +14,7 @@ all: bootstrap sync test package bbtest
 package:
 	@$(MAKE) bundle-binaries
 	@$(MAKE) bundle-debian
+	@$(MAKE) bundle-docker
 
 .PHONY: bundle-binaries
 bundle-binaries:
@@ -26,6 +27,11 @@ bundle-binaries:
 bundle-debian:
 	@echo "[info] packaging for debian"
 	@docker-compose run --rm debian -v $(VERSION)+$(META) --arch amd64
+
+.PHONY: bundle-docker
+bundle-docker:
+	@echo "[info] packaging for docker"
+	@docker build -t openbank/cnb-rates:$(VERSION)-$(META) .
 
 .PHONY: bootstrap
 bootstrap:
@@ -74,7 +80,10 @@ bbtest:
 	@(docker exec -it $$(\
 		docker run -d -ti \
 			--name=cnb_rates_bbtest \
+			-e UNIT_VERSION="$(VERSION)-$(META)" \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+			-v /var/run/docker.sock:/var/run/docker.sock \
+      -v /var/lib/docker/containers:/var/lib/docker/containers \
 			-v $$(pwd)/bbtest:/opt/bbtest \
 			-v $$(pwd)/reports:/reports \
 			--privileged=true \

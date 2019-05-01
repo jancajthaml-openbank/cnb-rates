@@ -21,17 +21,22 @@ RSpec.configure do |config|
     install + others.shuffle + uninstall
   end
 
-  config.before(:suite) do
+  $unit = UnitHelper.new()
+
+  config.before(:suite) do |_|
     print "[ suite starting ]\n"
 
     CNBHelper.start()
 
-    ["/data", "/reports"].each { |folder|
+    ["/reports"].each { |folder|
       FileUtils.mkdir_p folder
       %x(rm -rf #{folder}/*)
     }
 
-    print "[ suite started  ]\n"
+    print "[ downloading unit ]\n"
+    $unit.download()
+
+    print "[ suite started    ]\n"
   end
 
   config.after(:suite) do
