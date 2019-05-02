@@ -1,0 +1,22 @@
+[Unit]
+Description=openbank CNB Rates Batch service
+PartOf=cnb-rates.service
+ConditionPathExists=/etc/init/cnb-rates.conf
+
+[Service]
+Type=notify
+EnvironmentFile=/etc/init/cnb-rates.conf
+StartLimitBurst=0
+ExecStart=/openbank/services/cnb-rates/cnb-rates-batch
+StandardInput=null
+LimitNOFILE=1048576
+LimitNPROC=infinity
+LimitCORE=infinity
+Restart=no
+RestartSec=0
+TimeoutStartSec=0
+TimeoutSec=infinity
+KillMode=process
+
+[Install]
+WantedBy=cnb-rates.service

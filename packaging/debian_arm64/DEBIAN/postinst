@@ -1,0 +1,45 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+
+  configure)
+    if [ -f "/etc/init/cnb-rates.conf" ] ; then
+      systemctl unmask \
+        cnb-rates.path \
+        cnb-rates-rest.service \
+        cnb-rates-import.service \
+        cnb-rates-batch.service \
+        cnb-rates.service \
+      >/dev/null
+
+      systemctl enable \
+        cnb-rates.path \
+        cnb-rates-import.service \
+        cnb-rates-rest.service \
+        cnb-rates.service \
+      >/dev/null
+
+      ontime="30 14 * * * set -a; systemctl start cnb-rates-import"
+      crontab -l | grep -v 'cnb-rates-import' | crontab -
+      crontab -l | { cat; echo "${ontime}"; } | crontab -
+
+      (systemctl start cnb-rates.service >/dev/null || :)
+    else
+      (>&2 echo "/etc/init/cnb-rates.conf file not found")
+      exit 1
+    fi
+  ;;
+
+  abort-upgrade|abort-remove|abort-deconfigure)
+  ;;
+
+  *)
+    (>&2 echo "postinst called with unknown argument \ `$1`")
+    exit 1
+  ;;
+
+esac
+
+exit 0
