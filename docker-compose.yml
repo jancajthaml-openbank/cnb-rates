@@ -7,10 +7,7 @@ services:
   # -------------------------------------------------------------------------- #
 
   go:
-    build:
-      dockerfile: dev/Dockerfile
-      context: .
-    image: openbankdev/cnb_rates_base
+    image: jancajthaml/go
     volumes:
       - .:/project
       - ./services/cnb-rates-import:/go/src/github.com/jancajthaml-openbank/cnb-rates-import
@@ -75,18 +72,10 @@ services:
 
   # -------------------------------------------------------------------------- #
 
-  bbtest:
-    build:
-      context: .
-      dockerfile: bbtest/Dockerfile
-    image: openbankdev/cnb_rates_bbtest
-
-  # -------------------------------------------------------------------------- #
-
   artifacts:
     build:
       dockerfile: Dockerfile
       context: .
-    image: openbank/cnb-rates
+    image: openbank/lake
 
 # ---------------------------------------------------------------------------- #
