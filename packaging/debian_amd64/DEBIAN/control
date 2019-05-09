@@ -1,9 +1,10 @@
 Package: cnb-rates
-Version: 1.0.0+improve-circleci-stage2
-Architecture: amd64
-Maintainer: Jan Cajthaml <jan.cajthaml@gmail.com>
-Depends: init-system-helpers (>= 1.18~), openssl (>= 1.1~)
-Section: openbank
+Version: 1.0.0+more-robust-debian-packaging
+Section: misc
 Priority: extra
-Vcs-Git: git@github.com:jancajthaml-openbank/cnb-rates.git
-Description: Openbank CNB Exchange Rates Mirror
+Architecture: amd64
+Vcs-Git: https://github.com/jancajthaml-openbank/cnb-rates.git
+Maintainer: Jan Cajthaml <jan.cajthaml@gmail.com>
+Depends: openssl (>= 1.1~), libc6
+Description: cnb rates offline mirror
+ Service providing access and api for Czech National Bank exchange rates
