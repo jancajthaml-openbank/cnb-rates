@@ -83,6 +83,7 @@ bbtest:
 			-v /var/lib/docker/containers:/var/lib/docker/containers \
 			-v $$(pwd)/bbtest:/opt/bbtest \
 			-v $$(pwd)/reports:/reports \
+			--cap-add=SYS_TIME \
 		jancajthaml/bbtest:amd64 \
 	) rspec --require /opt/bbtest/spec.rb \
 		--format documentation \
