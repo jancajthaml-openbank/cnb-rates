@@ -40,24 +40,107 @@ if [ ! "${TARGET_ARCHITECTURE}" ] ; then
   exit 1
 fi
 
+generate_manpage() {
+  mkdir -p ${DEB_SOURCES}/usr/share/man/man8
+
+  target_batch="${DEB_SOURCES}/usr/share/man/man8/cnb-rates-batch.8"
+  target_import="${DEB_SOURCES}/usr/share/man/man8/cnb-rates-import.8"
+  target_rest="${DEB_SOURCES}/usr/share/man/man8/cnb-rates-rest.8"
+
+  if [ -f ${target_batch} ] ; then
+    rm -f ${target_batch}
+  fi
+
+  if [ -f ${target_batch}.gz ] ; then
+    rm -f ${target_batch}.gz
+  fi
+
+  if [ -f ${target_import} ] ; then
+    rm -f ${target_import}
+  fi
+
+  if [ -f ${target_import}.gz ] ; then
+    rm -f ${target_import}.gz
+  fi
+
+  if [ -f ${target_rest} ] ; then
+    rm -f ${target_rest}
+  fi
+
+  if [ -f ${target_rest}.gz ] ; then
+    rm -f ${target_rest}.gz
+  fi
+
+cat > ${target_batch} <<EOL
+.TH CNB-RATES-BATCH 8 2019 "CNB Rates Batch" "OpenBank CNB Rates Batch Processing"
+.SH NAME
+cnb-rates-batch \- starts openbank cnb exchange rates batch processing
+.SH DESCRIPTION
+The
+.B pldd
+cnb rates batch processes newly downloaded cnb rates
+.EE
+EOL
+
+cat > ${target_import} <<EOL
+.TH CNB-RATES-IMPORT 8 2019 "CNB Rates Import" "OpenBank CNB Rates Cloud Import"
+.SH NAME
+cnb-rates-import \- starts openbank cnb exchange rates cloud import
+.SH DESCRIPTION
+The
+.B pldd
+cnb rates import creates offline mirror of official cnb rates cloud
+.EE
+EOL
+
+cat > ${target_rest} <<EOL
+.TH CNB-RATES-REST 8 2019 "CNB Rates REST" "OpenBank CNB Rates REST Server"
+.SH NAME
+cnb-rates-rest \- starts openbank cnb exchange rates REST server
+.SH DESCRIPTION
+The
+.B pldd
+cnb rates rest provides REST server for accessing cnb rates
+.EE
+EOL
+
+  cat ${target_batch} | gzip -n -9 > ${target_batch}.gz
+  rm ${target_batch}
+
+  cat ${target_import} | gzip -n -9 > ${target_import}.gz
+  rm ${target_import}
+
+  cat ${target_rest} | gzip -n -9 > ${target_rest}.gz
+  rm ${target_rest}
+}
+
 generate_changelog() {
+  mkdir -p ${DEB_SOURCES}/usr/share/doc/cnb-rates
+
+  target="${DEB_SOURCES}/usr/share/doc/cnb-rates/changelog"
+
+  if [ -f ${target} ] ; then
+    rm -f ${target}
+  fi
+
+  if [ -f ${target}.Debian.gz ] ; then
+    rm -f ${target}.Debian.gz
+  fi
+
+  touch ${target}
+
   VER="${VERSION}"
   tag=HEAD
   ADDS=$(echo ${VER} | sed -e 's/~.*//' | cut -s -d- -f2 | sed '/^[[:space:]]*$/d')
-  if [ -f ${CHANGELOG} ] ; then
-    rm -f ${CHANGELOG}
-  fi
-
-  touch ${CHANGELOG}
 
   if [[ -z "${ADDS// }" ]] ; then
-    DATE=$(git log -1 --format=%cD ${tag})
-    echo "cnb-rates (${VER}) ${DIST}; urgency=low" >> ${CHANGELOG}
-    echo "" >> ${CHANGELOG}
-    echo "  * Includes non-released commits" >> ${CHANGELOG}
-    echo "" >> ${CHANGELOG}
-    echo " -- Jan Cajthaml <jan.cajthaml@gmail.com>  ${DATE}" >> ${CHANGELOG}
-    echo "" >> ${CHANGELOG}
+    DATE=$(date '+%a, %-d %b %Y %H:%M:%S %z')
+    echo "cnb-rates (${VER}) unstable; urgency=low" >> ${target}
+    echo "" >> ${target}
+    echo "  * includes non-released commits" >> ${target}
+    echo "" >> ${target}
+    echo " -- Jan Cajthaml <jan.cajthaml@gmail.com>  ${DATE}" >> ${target}
+    echo "" >> ${target}
   fi
 
   PAIRS=()
@@ -78,20 +161,23 @@ generate_changelog() {
 
     if [[ -n "${commits// }" ]] ; then
 
-      echo "cnb-rates (${tag_to#v}) ${DIST}; urgency=low" >> ${CHANGELOG}
-      echo "" >> ${CHANGELOG}
+      echo "cnb-rates (${tag_to#v}) stable; urgency=low" >> ${target}
+      echo "" >> ${target}
 
       echo "${commits}" | \
       while read note ; do
-        echo "  * $(tr '[:lower:]' '[:upper:]' <<< ${note:0:1})${note:1}" >> ${CHANGELOG}
+        echo "  * $(tr '[:lower:]' '[:upper:]' <<< ${note:0:1})${note:1}" >> ${target}
       done
 
-      echo "" >> ${CHANGELOG}
+      echo "" >> ${target}
 
-      echo " -- Jan Cajthaml <jan.cajthaml@gmail.com>  ${DATE}" >> ${CHANGELOG}
-      echo "" >> ${CHANGELOG}
+      echo " -- Jan Cajthaml <jan.cajthaml@gmail.com>  ${DATE}" >> ${target}
+      echo "" >> ${target}
     fi
   done
+
+  cat ${target} | gzip -n -9 > ${target}.Debian.gz
+  rm ${target}
 }
 
 ################################################################################
@@ -105,10 +191,10 @@ if [ ! -d "${DEB_SOURCES}" ] ; then
   exit 1
 fi
 
-CHANGELOG=${DEB_SOURCES}/DEBIAN/changelog
-CONTROL=${DEB_SOURCES}/DEBIAN/control
-DIST=unstable
-FIRST=1
+if [ ! -f "${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}" ] ; then
+  (>&2 echo "did not found binary to package at ${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}")
+  exit 1
+fi
 
 if [ ! -f "${BIN_SOURCES}/cnb-rates-import-linux-${TARGET_ARCHITECTURE}" ] ; then
   (>&2 echo "did not found binary to package at ${BIN_SOURCES}/cnb-rates-import-linux-${TARGET_ARCHITECTURE}")
@@ -120,50 +206,97 @@ if [ ! -f "${BIN_SOURCES}/cnb-rates-batch-linux-${TARGET_ARCHITECTURE}" ] ; then
   exit 1
 fi
 
-if [ ! -f "${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}" ] ; then
-  (>&2 echo "did not found binary to package at ${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}")
-  exit 1
+mkdir -p ${DEB_SOURCES}/usr/bin
+if [ -f "${DEB_SOURCES}/usr/bin/cnb-rates-rest" ] ; then
+  rm -f ${DEB_SOURCES}/usr/bin/cnb-rates-rest
+fi
+if [ -f "${DEB_SOURCES}/usr/bin/cnb-rates-import" ] ; then
+  rm -f ${DEB_SOURCES}/usr/bin/cnb-rates-import
+fi
+if [ -f "${DEB_SOURCES}/usr/bin/cnb-rates-batch" ] ; then
+  rm -f ${DEB_SOURCES}/usr/bin/cnb-rates-batch
 fi
 
-mkdir -p ${DEB_SOURCES}/openbank/services/cnb-rates
+case ${TARGET_ARCHITECTURE} in
 
-if [ -f "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-import" ] ; then
-  rm -f ${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-import
-fi
+  armhf)
+    arm-linux-gnueabihf-objcopy \
+      --strip-debug \
+      --strip-unneeded \
+      "${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}" \
+      "${DEB_SOURCES}/usr/bin/cnb-rates-rest"
+    arm-linux-gnueabihf-objcopy \
+      --strip-debug \
+      --strip-unneeded \
+      "${BIN_SOURCES}/cnb-rates-import-linux-${TARGET_ARCHITECTURE}" \
+      "${DEB_SOURCES}/usr/bin/cnb-rates-import"
+    arm-linux-gnueabihf-objcopy \
+      --strip-debug \
+      --strip-unneeded \
+      "${BIN_SOURCES}/cnb-rates-batch-linux-${TARGET_ARCHITECTURE}" \
+      "${DEB_SOURCES}/usr/bin/cnb-rates-batch"
+  ;;
 
-if [ -f "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-rest" ] ; then
-  rm -f ${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-rest
-fi
+  arm64)
+    aarch64-linux-gnu-objcopy \
+      --strip-debug \
+      --strip-unneeded \
+      "${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}" \
+      "${DEB_SOURCES}/usr/bin/cnb-rates-rest"
+    aarch64-linux-gnu-objcopy \
+      --strip-debug \
+      --strip-unneeded \
+      "${BIN_SOURCES}/cnb-rates-import-linux-${TARGET_ARCHITECTURE}" \
+      "${DEB_SOURCES}/usr/bin/cnb-rates-import"
+    aarch64-linux-gnu-objcopy \
+      --strip-debug \
+      --strip-unneeded \
+      "${BIN_SOURCES}/cnb-rates-batch-linux-${TARGET_ARCHITECTURE}" \
+      "${DEB_SOURCES}/usr/bin/cnb-rates-batch"
+  ;;
 
-if [ -f "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-batch" ] ; then
-  rm -f ${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-batch
-fi
+  amd64)
+    objcopy \
+      --strip-debug \
+      --strip-unneeded \
+      "${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}" \
+      "${DEB_SOURCES}/usr/bin/cnb-rates-rest"
+    objcopy \
+      --strip-debug \
+      --strip-unneeded \
+      "${BIN_SOURCES}/cnb-rates-import-linux-${TARGET_ARCHITECTURE}" \
+      "${DEB_SOURCES}/usr/bin/cnb-rates-import"
+    objcopy \
+      --strip-debug \
+      --strip-unneeded \
+      "${BIN_SOURCES}/cnb-rates-batch-linux-${TARGET_ARCHITECTURE}" \
+      "${DEB_SOURCES}/usr/bin/cnb-rates-batch"
+  ;;
 
-du -hs "${BIN_SOURCES}/cnb-rates-import-linux-${TARGET_ARCHITECTURE}"
-du -hs "${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}"
-du -hs "${BIN_SOURCES}/cnb-rates-batch-linux-${TARGET_ARCHITECTURE}"
+  *)
+    cp \
+      "${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}" \
+      "${DEB_SOURCES}/usr/bin/cnb-rates-rest"
+    cp \
+      "${BIN_SOURCES}/cnb-rates-import-linux-${TARGET_ARCHITECTURE}" \
+      "${DEB_SOURCES}/usr/bin/cnb-rates-import"
+    cp \
+      "${BIN_SOURCES}/cnb-rates-batch-linux-${TARGET_ARCHITECTURE}" \
+      "${DEB_SOURCES}/usr/bin/cnb-rates-batch"
+  ;;
 
-cp \
-  "${BIN_SOURCES}/cnb-rates-import-linux-${TARGET_ARCHITECTURE}" \
-  "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-import"
-
-cp \
-  "${BIN_SOURCES}/cnb-rates-rest-linux-${TARGET_ARCHITECTURE}" \
-  "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-rest"
-
-cp \
-  "${BIN_SOURCES}/cnb-rates-batch-linux-${TARGET_ARCHITECTURE}" \
-  "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-batch"
-
-file "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-import"
-file "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-rest"
-file "${DEB_SOURCES}/openbank/services/cnb-rates/cnb-rates-batch"
+esac
 
 generate_changelog
-sed -i 's/Version.*/Version: '${VERSION#v}'/' ${CONTROL}
+generate_manpage
 
-find "${BIN_SOURCES}" -type f -name "cnb-rates_*_${TARGET_ARCHITECTURE}.deb" -exec rm {} \;
+sed -i 's/Version.*/Version: '${VERSION#v}'/' "${DEB_SOURCES}/DEBIAN/control"
+
+find "${BIN_SOURCES}" -name "cnb-rates_*_${TARGET_ARCHITECTURE}.deb" -exec rm -f {} \;
 
 dpkg-deb --build "${DEB_SOURCES}" "${BIN_SOURCES}"
 
+find "${BIN_SOURCES}" -name "cnb-rates_*_${TARGET_ARCHITECTURE}.deb" -exec fakeroot lintian --pedantic {} \;
 find "${BIN_SOURCES}" -name "cnb-rates_*_${TARGET_ARCHITECTURE}.deb" -exec du -hs {} \;
+
+exit 0
