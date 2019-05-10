@@ -76,9 +76,7 @@ cat > ${target_batch} <<EOL
 .SH NAME
 cnb-rates-batch \- starts openbank cnb exchange rates batch processing
 .SH DESCRIPTION
-The
-.B pldd
-cnb rates batch processes newly downloaded cnb rates
+The cnb rates batch processes newly downloaded cnb rates
 .EE
 EOL
 
@@ -98,9 +96,7 @@ cat > ${target_rest} <<EOL
 .SH NAME
 cnb-rates-rest \- starts openbank cnb exchange rates REST server
 .SH DESCRIPTION
-The
-.B pldd
-cnb rates rest provides REST server for accessing cnb rates
+The cnb rates rest provides REST server for accessing cnb rates
 .EE
 EOL
 
@@ -176,7 +172,7 @@ generate_changelog() {
     fi
   done
 
-  cat ${target} | gzip -n -9 > ${target}.Debian.gz
+  cat ${target} | gzip -n -9 > ${target}.gz
   rm ${target}
 }
 

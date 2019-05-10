@@ -24,7 +24,6 @@ import (
 )
 
 func loadConfFromEnv() Configuration {
-	logOutput := getEnvString("CNB_RATES_LOG", "")
 	logLevel := strings.ToUpper(getEnvString("CNB_RATES_LOG_LEVEL", "DEBUG"))
 	secrets := getEnvString("CNB_RATES_SECRETS", "")
 	rootStorage := getEnvString("CNB_RATES_STORAGE", "/data")
@@ -49,7 +48,6 @@ func loadConfFromEnv() Configuration {
 		ServerPort:  port,
 		SecretKey:   key,
 		SecretCert:  cert,
-		LogOutput:   logOutput,
 		LogLevel:    logLevel,
 	}
 }

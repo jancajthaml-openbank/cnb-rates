@@ -27,7 +27,6 @@ import (
 )
 
 func loadConfFromEnv() Configuration {
-	logOutput := getEnvString("CNB_RATES_LOG", "")
 	logLevel := strings.ToUpper(getEnvString("CNB_RATES_LOG_LEVEL", "DEBUG"))
 	rootStorage := getEnvString("CNB_RATES_STORAGE", "/data")
 	cnbGateway := getEnvString("CNB_RATES_CNB_GATEWAY", "https://www.cnb.cz")
@@ -55,7 +54,6 @@ func loadConfFromEnv() Configuration {
 	return Configuration{
 		RootStorage:        rootStorage,
 		CNBGateway:         cnbGateway,
-		LogOutput:          logOutput,
 		LogLevel:           logLevel,
 		MetricsRefreshRate: metricsRefreshRate,
 		MetricsOutput:      metricsOutput,
