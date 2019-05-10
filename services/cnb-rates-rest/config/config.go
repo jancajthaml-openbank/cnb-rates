@@ -24,8 +24,6 @@ type Configuration struct {
 	SecretKey []byte
 	// Secrets represents cerificate .crt
 	SecretCert []byte
-	// LogOutput represents log output
-	LogOutput string
 	// LogLevel ignorecase log level
 	LogLevel string
 }
