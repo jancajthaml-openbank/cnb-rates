@@ -1,4 +1,4 @@
-module github.com/jancajthaml-openbank/bondster-bco/services/bondster-bco-rest
+module github.com/jancajthaml-openbank/cnb-rates/services/cnb-rates-rest
 
 require (
 	github.com/gorilla/mux v1.7.1

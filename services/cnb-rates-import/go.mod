@@ -1,4 +1,4 @@
-module github.com/jancajthaml-openbank/fio-bco/services/fio-bco-import
+module github.com/jancajthaml-openbank/cnb-rates/services/cnb-rates-import
 
 require (
 	github.com/jancajthaml-openbank/local-fs v1.0.3
