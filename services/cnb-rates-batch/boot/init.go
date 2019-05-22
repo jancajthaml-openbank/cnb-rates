@@ -18,44 +18,41 @@ import (
 	"context"
 	"os"
 
+	"github.com/jancajthaml-openbank/cnb-rates-batch/batch"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
-	"github.com/jancajthaml-openbank/cnb-rates-batch/daemon"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
-	log "github.com/sirupsen/logrus"
 )
 
-// Application encapsulate initialized application
-type Application struct {
+// Program encapsulate initialized application
+type Program struct {
 	cfg       config.Configuration
 	interrupt chan os.Signal
-	metrics   daemon.Metrics
-	batch     daemon.Batch
+	metrics   metrics.Metrics
+	batch     batch.Batch
 	cancel    context.CancelFunc
 }
 
 // Initialize application
-func Initialize() Application {
+func Initialize() Program {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cfg := config.GetConfig()
 
 	utils.SetupLogger(cfg.LogLevel)
 
-	log.Info(">>> Setup <<<")
-
-	metrics := daemon.NewMetrics(ctx, cfg)
-
 	storage := localfs.NewStorage(cfg.RootStorage)
+	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
 
-	batch := daemon.NewBatch(ctx, cfg, &metrics, &storage)
+	batchDaemon := batch.NewBatch(ctx, &metricsDaemon, &storage)
 
-	return Application{
+	return Program{
 		cfg:       cfg,
 		interrupt: make(chan os.Signal, 1),
-		metrics:   metrics,
-		batch:     batch,
+		metrics:   metricsDaemon,
+		batch:     batchDaemon,
 		cancel:    cancel,
 	}
 }

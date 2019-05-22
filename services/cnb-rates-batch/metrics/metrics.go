@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package daemon
+package metrics
 
 import (
 	"context"
@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
 
 	metrics "github.com/rcrowley/go-metrics"
@@ -30,7 +29,7 @@ import (
 
 // Metrics represents metrics subroutine
 type Metrics struct {
-	Support
+	utils.DaemonSupport
 	output         string
 	refreshRate    time.Duration
 	gatewayLatency metrics.Timer
@@ -44,11 +43,11 @@ type Snapshot struct {
 }
 
 // NewMetrics returns metrics fascade
-func NewMetrics(ctx context.Context, cfg config.Configuration) Metrics {
+func NewMetrics(ctx context.Context, output string, refreshRate time.Duration) Metrics {
 	return Metrics{
-		Support:        NewDaemonSupport(ctx),
-		output:         cfg.MetricsOutput,
-		refreshRate:    cfg.MetricsRefreshRate,
+		DaemonSupport:  utils.NewDaemonSupport(ctx),
+		output:         output,
+		refreshRate:    refreshRate,
 		gatewayLatency: metrics.NewTimer(),
 		importLatency:  metrics.NewTimer(),
 	}
@@ -151,7 +150,7 @@ func (metrics Metrics) Start() {
 	metrics.MarkReady()
 
 	select {
-	case <-metrics.canStart:
+	case <-metrics.CanStart:
 		break
 	case <-metrics.Done():
 		return

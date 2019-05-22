@@ -15,7 +15,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -33,21 +32,10 @@ func loadConfFromEnv() Configuration {
 		log.Fatal("missing required parameter to run")
 	}
 
-	cert, err := ioutil.ReadFile(secrets + "/domain.local.crt")
-	if err != nil {
-		log.Fatalf("unable to load certificate %s/domain.local.crt with error %+v", secrets, err)
-	}
-
-	key, err := ioutil.ReadFile(secrets + "/domain.local.key")
-	if err != nil {
-		log.Fatalf("unable to load certificate %s/domain.local.key with error %+v", secrets, err)
-	}
-
 	return Configuration{
 		RootStorage: rootStorage,
 		ServerPort:  port,
-		SecretKey:   key,
-		SecretCert:  cert,
+		SecretsPath: secrets,
 		LogLevel:    logLevel,
 	}
 }
