@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package daemon
+package batch
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
@@ -30,17 +30,17 @@ import (
 
 // Batch represents batch subroutine
 type Batch struct {
-	Support
+	utils.DaemonSupport
 	storage *localfs.Storage
-	metrics *Metrics
+	metrics *metrics.Metrics
 }
 
 // NewBatch returns batch fascade
-func NewBatch(ctx context.Context, cfg config.Configuration, metrics *Metrics, storage *localfs.Storage) Batch {
+func NewBatch(ctx context.Context, metrics *metrics.Metrics, storage *localfs.Storage) Batch {
 	return Batch{
-		Support: NewDaemonSupport(ctx),
-		storage: storage,
-		metrics: metrics,
+		DaemonSupport: utils.NewDaemonSupport(ctx),
+		storage:       storage,
+		metrics:       metrics,
 	}
 }
 
@@ -83,7 +83,7 @@ func (batch Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
 	cachePath := utils.FXMainOfflineDirectory() + "/"
 
 	for _, day := range days {
-		if batch.ctx.Err() != nil {
+		if batch.IsDone() {
 			return nil
 		}
 
@@ -129,7 +129,7 @@ func (batch Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
 
 	cachePath := utils.FXOtherOfflineDirectory() + "/"
 	for _, day := range days {
-		if batch.ctx.Err() != nil {
+		if batch.IsDone() {
 			return nil
 		}
 
@@ -182,7 +182,7 @@ func (batch Batch) Start() {
 	batch.MarkReady()
 
 	select {
-	case <-batch.canStart:
+	case <-batch.CanStart:
 		break
 	case <-batch.Done():
 		return

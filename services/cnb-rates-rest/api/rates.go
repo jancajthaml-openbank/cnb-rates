@@ -21,11 +21,10 @@ import (
 	"github.com/jancajthaml-openbank/cnb-rates-rest/utils"
 
 	"github.com/gorilla/mux"
-	localfs "github.com/jancajthaml-openbank/local-fs"
 )
 
 // RatesPartial returns http handler for single currency
-func RatesPartial(storage *localfs.Storage) func(w http.ResponseWriter, r *http.Request) {
+func RatesPartial(server *Server) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 
@@ -41,7 +40,7 @@ func RatesPartial(storage *localfs.Storage) func(w http.ResponseWriter, r *http.
 		switch r.Method {
 
 		case "GET":
-			GetRates(storage, currency, w, r)
+			GetRates(server, currency, w, r)
 			return
 
 		default:
@@ -55,8 +54,8 @@ func RatesPartial(storage *localfs.Storage) func(w http.ResponseWriter, r *http.
 }
 
 // GetTokens retruns list of existing tokens
-func GetRates(storage *localfs.Storage, currency string, w http.ResponseWriter, r *http.Request) {
-	tokens, err := persistence.LoadRates(storage, currency)
+func GetRates(server *Server, currency string, w http.ResponseWriter, r *http.Request) {
+	tokens, err := persistence.LoadRates(server.Storage, currency)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)

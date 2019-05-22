@@ -1,5 +1,5 @@
 Package: cnb-rates
-Version: 1.0.0+changelog
+Version: 1.0.0+single-app-struct
 Section: misc
 Priority: extra
 Architecture: amd64

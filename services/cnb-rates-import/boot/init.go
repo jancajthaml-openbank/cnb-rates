@@ -19,40 +19,39 @@ import (
 	"os"
 
 	"github.com/jancajthaml-openbank/cnb-rates-import/config"
-	"github.com/jancajthaml-openbank/cnb-rates-import/daemon"
+	"github.com/jancajthaml-openbank/cnb-rates-import/integration"
+	"github.com/jancajthaml-openbank/cnb-rates-import/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
-	log "github.com/sirupsen/logrus"
 )
 
-// Application encapsulate initialized application
-type Application struct {
+// Program encapsulate initialized application
+type Program struct {
 	cfg       config.Configuration
 	interrupt chan os.Signal
-	metrics   daemon.Metrics
-	cnb       daemon.CNBRatesImport
+	metrics   metrics.Metrics
+	cnb       integration.CNBRatesImport
 	cancel    context.CancelFunc
 }
 
 // Initialize application
-func Initialize() Application {
+func Initialize() Program {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cfg := config.GetConfig()
 
 	utils.SetupLogger(cfg.LogLevel)
 
-	log.Info(">>> Setup <<<")
-
-	metrics := daemon.NewMetrics(ctx, cfg)
 	storage := localfs.NewStorage(cfg.RootStorage)
-	cnb := daemon.NewCNBRatesImport(ctx, cfg, &metrics, &storage)
+	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
 
-	return Application{
+	cnb := integration.NewCNBRatesImport(ctx, cfg, &metricsDaemon, &storage)
+
+	return Program{
 		cfg:       cfg,
 		interrupt: make(chan os.Signal, 1),
-		metrics:   metrics,
+		metrics:   metricsDaemon,
 		cnb:       cnb,
 		cancel:    cancel,
 	}

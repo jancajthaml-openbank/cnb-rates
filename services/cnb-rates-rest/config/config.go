@@ -20,10 +20,8 @@ type Configuration struct {
 	RootStorage string
 	// ServerPort is port which server is bound to
 	ServerPort int
-	// Secrets represents cerificate .key
-	SecretKey []byte
-	// Secrets represents cerificate .crt
-	SecretCert []byte
+	// SecretsPath directory where .key and .crt is stored
+	SecretsPath string
 	// LogLevel ignorecase log level
 	LogLevel string
 }

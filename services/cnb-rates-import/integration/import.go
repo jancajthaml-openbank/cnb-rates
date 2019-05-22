@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package daemon
+package integration
 
 import (
 	"bytes"
@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/jancajthaml-openbank/cnb-rates-import/config"
-	"github.com/jancajthaml-openbank/cnb-rates-import/http"
+	"github.com/jancajthaml-openbank/cnb-rates-import/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
@@ -34,21 +34,21 @@ import (
 
 // CNBRatesImport represents cnb gateway rates import subroutine
 type CNBRatesImport struct {
-	Support
+	utils.DaemonSupport
 	cnbGateway string
 	storage    *localfs.Storage
-	metrics    *Metrics
-	httpClient http.Client
+	metrics    *metrics.Metrics
+	httpClient Client
 }
 
 // NewCNBRatesImport returns cnb rates import fascade
-func NewCNBRatesImport(ctx context.Context, cfg config.Configuration, metrics *Metrics, storage *localfs.Storage) CNBRatesImport {
+func NewCNBRatesImport(ctx context.Context, cfg config.Configuration, metrics *metrics.Metrics, storage *localfs.Storage) CNBRatesImport {
 	return CNBRatesImport{
-		Support:    NewDaemonSupport(ctx),
-		storage:    storage,
-		cnbGateway: cfg.CNBGateway,
-		metrics:    metrics,
-		httpClient: http.NewClient(),
+		DaemonSupport: utils.NewDaemonSupport(ctx),
+		storage:       storage,
+		cnbGateway:    cfg.CNBGateway,
+		metrics:       metrics,
+		httpClient:    NewClient(),
 	}
 }
 
@@ -122,7 +122,7 @@ func (cnb CNBRatesImport) syncMainRates(days []time.Time) error {
 				if !ok {
 					return
 				}
-				if cnb.ctx.Err() != nil {
+				if cnb.IsDone() {
 					wg.Done()
 					continue
 				}
@@ -236,7 +236,7 @@ func (cnb CNBRatesImport) importRoundtrip() {
 
 	months := utils.GetMonthsBetween(fxMainHistoryStart, today)
 	for _, month := range months {
-		if cnb.ctx.Err() != nil {
+		if cnb.IsDone() {
 			return
 		}
 
@@ -298,7 +298,7 @@ func (cnb CNBRatesImport) Start() {
 	cnb.MarkReady()
 
 	select {
-	case <-cnb.canStart:
+	case <-cnb.CanStart:
 		break
 	case <-cnb.Done():
 		return

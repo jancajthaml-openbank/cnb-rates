@@ -20,41 +20,35 @@ import (
 
 	"github.com/jancajthaml-openbank/cnb-rates-rest/api"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/config"
-	"github.com/jancajthaml-openbank/cnb-rates-rest/daemon"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
-	log "github.com/sirupsen/logrus"
 )
 
-// Application encapsulate initialized application
-type Application struct {
+// Program encapsulate initialized application
+type Program struct {
 	cfg       config.Configuration
 	interrupt chan os.Signal
-	rest      daemon.Server
+	rest      api.Server
 	cancel    context.CancelFunc
 }
 
 // Initialize application
-func Initialize() Application {
+func Initialize() Program {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cfg := config.GetConfig()
 
 	utils.SetupLogger(cfg.LogLevel)
 
-	log.Infof(">>> Setup <<<")
-
 	storage := localfs.NewStorage(cfg.RootStorage)
 
-	rest := daemon.NewServer(ctx, cfg)
-	rest.HandleFunc("/health", api.HealtCheck, "GET", "HEAD")
-	rest.HandleFunc("/rates/{currency}", api.RatesPartial(&storage), "GET")
+	restDaemon := api.NewServer(ctx, cfg.ServerPort, cfg.SecretsPath, &storage)
 
-	return Application{
+	return Program{
 		cfg:       cfg,
 		interrupt: make(chan os.Signal, 1),
-		rest:      rest,
+		rest:      restDaemon,
 		cancel:    cancel,
 	}
 }
