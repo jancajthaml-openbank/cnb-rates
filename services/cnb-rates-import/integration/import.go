@@ -77,6 +77,8 @@ func (cnb CNBRatesImport) syncMainRateToday(today time.Time) error {
 		return fmt.Errorf("cannot store cache for %s at %s", today.Format("02.01.2006"), cachePath)
 	}
 
+	cnb.metrics.DayImported()
+
 	log.Debug("downloaded fx-main for today")
 	return nil
 }
@@ -103,6 +105,8 @@ func (cnb CNBRatesImport) syncOtherRates(day time.Time) error {
 	}
 
 	log.Infof("downloaded fx-other for %s", day.Format("02.01.2006"))
+
+	cnb.metrics.DayImported()
 	return nil
 }
 
@@ -164,6 +168,7 @@ func (cnb CNBRatesImport) syncMainRates(days []time.Time) error {
 				}
 
 				log.Infof("downloaded fx-main for day %s", date.Format("02.01.2006"))
+				cnb.metrics.DayImported()
 				wg.Done()
 			}
 		}

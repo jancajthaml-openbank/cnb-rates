@@ -9,35 +9,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetFilename(t *testing.T) {
-	assert.Equal(t, "/a/b/c.batch.d", getFilename("/a/b/c.d"))
-}
-
-func TestMetricsPersist(t *testing.T) {
+func TestMetrics(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	entity := NewMetrics(ctx, "", time.Hour)
-	delay := 1e8
-	delta := 1e8
 
-	t.Log("TimeGatewayLatency properly times gateway latency")
+	t.Log("DayProcessed properly increments number of processed days")
 	{
-		require.Equal(t, int64(0), entity.gatewayLatency.Count())
-		entity.TimeGatewayLatency(func() {
-			time.Sleep(time.Duration(delay))
-		})
-		assert.Equal(t, int64(1), entity.gatewayLatency.Count())
-		assert.InDelta(t, entity.gatewayLatency.Percentile(0.95), delay, delta)
+		require.Equal(t, int64(0), entity.daysProcessed.Count())
+		entity.DayProcessed()
+		assert.Equal(t, int64(1), entity.daysProcessed.Count())
 	}
 
-	t.Log("TimeImportLatency properly times import latency")
+	t.Log("MonthProcessed properly increments number of processed months")
 	{
-		require.Equal(t, int64(0), entity.importLatency.Count())
-		entity.TimeImportLatency(func() {
-			time.Sleep(time.Duration(delay))
-		})
-		assert.Equal(t, int64(1), entity.importLatency.Count())
-		assert.InDelta(t, entity.importLatency.Percentile(0.95), delay, delta)
+		require.Equal(t, int64(0), entity.monthsProcessed.Count())
+		entity.MonthProcessed()
+		assert.Equal(t, int64(1), entity.monthsProcessed.Count())
 	}
 }

@@ -30,36 +30,41 @@ func loadConfFromEnv() Configuration {
 	logLevel := strings.ToUpper(getEnvString("CNB_RATES_LOG_LEVEL", "DEBUG"))
 	rootStorage := getEnvString("CNB_RATES_STORAGE", "/data")
 	cnbGateway := getEnvString("CNB_RATES_CNB_GATEWAY", "https://www.cnb.cz")
-	metricsOutput := getEnvString("CNB_RATES_METRICS_OUTPUT", "")
+	metricsOutput := getEnvFilename("CNB_RATES_METRICS_OUTPUT", "/tmp")
 	metricsRefreshRate := getEnvDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
 
 	if rootStorage == "" {
 		log.Fatal("missing required parameter to run")
 	}
 
-	rootStorage = rootStorage + "/rates/cnb"
-
-	if metricsOutput != "" && os.MkdirAll(filepath.Dir(metricsOutput), os.ModePerm) != nil {
-		log.Fatal("unable to assert metrics output")
-	}
-
-	if os.MkdirAll(rootStorage+"/"+utils.FXMainOfflineDirectory(), os.ModePerm) != nil {
+	if os.MkdirAll(rootStorage+"/rates/cnb/"+utils.FXMainOfflineDirectory(), os.ModePerm) != nil {
 		log.Fatal("unable to assert daily offline directory")
 	}
 
-	if os.MkdirAll(rootStorage+"/"+utils.FXOtherOfflineDirectory(), os.ModePerm) != nil {
+	if os.MkdirAll(rootStorage+"/rates/cnb/"+utils.FXOtherOfflineDirectory(), os.ModePerm) != nil {
 		log.Fatal("unable to assert monthly offline directory")
 	}
 
 	return Configuration{
-		RootStorage:        rootStorage,
+		RootStorage:        rootStorage + "/rates/cnb",
 		CNBGateway:         cnbGateway,
 		LogLevel:           logLevel,
 		MetricsRefreshRate: metricsRefreshRate,
-		MetricsOutput:      metricsOutput,
+		MetricsOutput:      metricsOutput + "/metrics.import.json",
 	}
 }
 
+func getEnvFilename(key, fallback string) string {
+	var value = strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	value = filepath.Clean(value)
+	if os.MkdirAll(value, os.ModePerm) != nil {
+		return fallback
+	}
+	return value
+}
 func getEnvString(key, fallback string) string {
 	value := strings.TrimSpace(os.Getenv(key))
 	if value == "" {

@@ -49,7 +49,8 @@ func (app Program) WaitReady(deadline time.Duration) error {
 		}()
 	}
 
-	wg.Add(1)
+	wg.Add(2)
+	waitWithDeadline(app.metrics)
 	waitWithDeadline(app.rest)
 	wg.Wait()
 
@@ -74,6 +75,7 @@ func (app Program) WaitInterrupt() {
 func (app Program) Run() {
 	log.Info(">>> Start <<<")
 
+	go app.metrics.Start()
 	go app.rest.Start()
 
 	if err := app.WaitReady(5 * time.Second); err != nil {
@@ -90,6 +92,7 @@ func (app Program) Run() {
 	utils.NotifyServiceStopping()
 
 	app.rest.Stop()
+	app.metrics.Stop()
 	app.cancel()
 
 	log.Info(">>> Stop <<<")

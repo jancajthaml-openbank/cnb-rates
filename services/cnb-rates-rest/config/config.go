@@ -14,6 +14,8 @@
 
 package config
 
+import "time"
+
 // Configuration of application
 type Configuration struct {
 	// RootStorage gives where to store journals
@@ -24,6 +26,11 @@ type Configuration struct {
 	SecretsPath string
 	// LogLevel ignorecase log level
 	LogLevel string
+	// MetricsRefreshRate represents interval in which in memory metrics should be
+	// persisted to disk
+	MetricsRefreshRate time.Duration
+	// MetricsOutput represents output file for metrics persistence
+	MetricsOutput string
 }
 
 // GetConfig loads application configuration

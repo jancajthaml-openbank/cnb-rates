@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-rest/utils"
 
 	metrics "github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
@@ -28,29 +28,29 @@ import (
 // Metrics represents metrics subroutine
 type Metrics struct {
 	utils.DaemonSupport
-	output          string
-	refreshRate     time.Duration
-	daysProcessed   metrics.Counter
-	monthsProcessed metrics.Counter
+	output         string
+	refreshRate    time.Duration
+	gatewayLatency metrics.Timer
+	importLatency  metrics.Timer
 }
 
 // NewMetrics returns metrics fascade
 func NewMetrics(ctx context.Context, output string, refreshRate time.Duration) Metrics {
 	return Metrics{
-		DaemonSupport:   utils.NewDaemonSupport(ctx),
-		output:          output,
-		refreshRate:     refreshRate,
-		daysProcessed:   metrics.NewCounter(),
-		monthsProcessed: metrics.NewCounter(),
+		DaemonSupport:  utils.NewDaemonSupport(ctx),
+		output:         output,
+		refreshRate:    refreshRate,
+		gatewayLatency: metrics.NewTimer(),
+		importLatency:  metrics.NewTimer(),
 	}
 }
 
-func (metrics *Metrics) DayProcessed() {
-	metrics.daysProcessed.Inc(1)
+func (metrics *Metrics) TimeGatewayLatency(f func()) {
+	metrics.gatewayLatency.Time(f)
 }
 
-func (metrics *Metrics) MonthProcessed() {
-	metrics.monthsProcessed.Inc(1)
+func (metrics *Metrics) TimeImportLatency(f func()) {
+	metrics.importLatency.Time(f)
 }
 
 // WaitReady wait for metrics to be ready

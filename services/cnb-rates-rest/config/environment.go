@@ -16,8 +16,10 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -27,17 +29,32 @@ func loadConfFromEnv() Configuration {
 	secrets := getEnvString("CNB_RATES_SECRETS", "")
 	rootStorage := getEnvString("CNB_RATES_STORAGE", "/data")
 	port := getEnvInteger("CNB_RATES_HTTP_PORT", 4011)
+	metricsOutput := getEnvFilename("CNB_RATES_METRICS_OUTPUT", "/tmp")
+	metricsRefreshRate := getEnvDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
 
 	if secrets == "" || rootStorage == "" {
 		log.Fatal("missing required parameter to run")
 	}
 
 	return Configuration{
-		RootStorage: rootStorage,
-		ServerPort:  port,
-		SecretsPath: secrets,
-		LogLevel:    logLevel,
+		MetricsRefreshRate: metricsRefreshRate,
+		MetricsOutput:      metricsOutput + "/metrics.json",
+		RootStorage:        rootStorage,
+		ServerPort:         port,
+		SecretsPath:        secrets,
+		LogLevel:           logLevel,
 	}
+}
+func getEnvFilename(key, fallback string) string {
+	var value = strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	value = filepath.Clean(value)
+	if os.MkdirAll(value, os.ModePerm) != nil {
+		return fallback
+	}
+	return value
 }
 
 func getEnvString(key, fallback string) string {
@@ -54,6 +71,18 @@ func getEnvInteger(key string, fallback int) int {
 		return fallback
 	}
 	cast, err := strconv.Atoi(value)
+	if err != nil {
+		log.Panicf("invalid value of variable %s", key)
+	}
+	return cast
+}
+
+func getEnvDuration(key string, fallback time.Duration) time.Duration {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	cast, err := time.ParseDuration(value)
 	if err != nil {
 		log.Panicf("invalid value of variable %s", key)
 	}

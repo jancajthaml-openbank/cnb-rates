@@ -112,6 +112,8 @@ func (batch Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
 			log.Warnf("error write cache fail fx-main data for day %s, %+v\n", day, err)
 			continue
 		}
+
+		batch.metrics.DayProcessed()
 	}
 
 	return nil
@@ -158,6 +160,8 @@ func (batch Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
 			log.Warnf("error write cache fail fx-other data for day %s, %+v\n", day, err)
 			continue
 		}
+
+		batch.metrics.DayProcessed()
 	}
 
 	return nil

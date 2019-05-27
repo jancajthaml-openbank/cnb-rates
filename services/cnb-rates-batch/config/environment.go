@@ -30,7 +30,7 @@ func loadConfFromEnv() Configuration {
 	logLevel := strings.ToUpper(getEnvString("CNB_RATES_LOG_LEVEL", "DEBUG"))
 	rootStorage := getEnvString("CNB_RATES_STORAGE", "/data")
 	cnbGateway := getEnvString("CNB_RATES_CNB_GATEWAY", "https://www.cnb.cz")
-	metricsOutput := getEnvString("CNB_RATES_METRICS_OUTPUT", "")
+	metricsOutput := getEnvFilename("CNB_RATES_METRICS_OUTPUT", "/tmp")
 	metricsRefreshRate := getEnvDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
 
 	if rootStorage == "" {
@@ -38,10 +38,6 @@ func loadConfFromEnv() Configuration {
 	}
 
 	rootStorage = rootStorage + "/rates/cnb"
-
-	if metricsOutput != "" && os.MkdirAll(filepath.Dir(metricsOutput), os.ModePerm) != nil {
-		log.Fatal("unable to assert metrics output")
-	}
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXMainDailyCacheDirectory(), os.ModePerm) != nil {
 		log.Fatal("unable to assert fx-main daily cache directory")
@@ -72,8 +68,20 @@ func loadConfFromEnv() Configuration {
 		CNBGateway:         cnbGateway,
 		LogLevel:           logLevel,
 		MetricsRefreshRate: metricsRefreshRate,
-		MetricsOutput:      metricsOutput,
+		MetricsOutput:      metricsOutput + "/metrics.batch.json",
 	}
+}
+
+func getEnvFilename(key, fallback string) string {
+	var value = strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	value = filepath.Clean(value)
+	if os.MkdirAll(value, os.ModePerm) != nil {
+		return fallback
+	}
+	return value
 }
 
 func getEnvString(key, fallback string) string {

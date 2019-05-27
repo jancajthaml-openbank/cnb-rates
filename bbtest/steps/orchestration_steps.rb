@@ -46,7 +46,7 @@ step "cnb-rates is reconfigured with" do |configuration|
     "STORAGE" => "/data",
     "LOG_LEVEL" => "DEBUG",
     "CNB_GATEWAY" => "https://127.0.0.1:4000",
-    "METRICS_OUTPUT" => "/reports/metrics.json",
+    "METRICS_OUTPUT" => "/reports",
     "METRICS_REFRESHRATE" => "1h",
     "HTTP_PORT" => "443",
     "SECRETS" => "/opt/cnb-rates/secrets",
