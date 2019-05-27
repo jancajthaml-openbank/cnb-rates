@@ -17,8 +17,6 @@ package metrics
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
@@ -32,14 +30,10 @@ type Metrics struct {
 	utils.DaemonSupport
 	output         string
 	refreshRate    time.Duration
+	daysImported   metrics.Counter
+	monthsImported metrics.Counter
 	gatewayLatency metrics.Timer
 	importLatency  metrics.Timer
-}
-
-// Snapshot holds metrics snapshot status
-type Snapshot struct {
-	GatewayLatency float64 `json:"gatewayLatency"`
-	ImportLatency  float64 `json:"importLatency"`
 }
 
 // NewMetrics returns metrics fascade
@@ -48,62 +42,27 @@ func NewMetrics(ctx context.Context, output string, refreshRate time.Duration) M
 		DaemonSupport:  utils.NewDaemonSupport(ctx),
 		output:         output,
 		refreshRate:    refreshRate,
+		daysImported:   metrics.NewCounter(),
+		monthsImported: metrics.NewCounter(),
 		gatewayLatency: metrics.NewTimer(),
 		importLatency:  metrics.NewTimer(),
 	}
 }
 
-// NewSnapshot returns metrics snapshot
-func NewSnapshot(metrics Metrics) Snapshot {
-	return Snapshot{
-		GatewayLatency: metrics.gatewayLatency.Percentile(0.95),
-		ImportLatency:  metrics.importLatency.Percentile(0.95),
-	}
-}
-
-func (metrics Metrics) TimeGatewayLatency(f func()) {
+func (metrics *Metrics) TimeGatewayLatency(f func()) {
 	metrics.gatewayLatency.Time(f)
 }
 
-func (metrics Metrics) TimeImportLatency(f func()) {
+func (metrics *Metrics) TimeImportLatency(f func()) {
 	metrics.importLatency.Time(f)
 }
 
-func (metrics Metrics) persist(filename string) {
-	tempFile := filename + "_temp"
-
-	data, err := utils.JSON.Marshal(NewSnapshot(metrics))
-	if err != nil {
-		log.Warnf("unable to create serialize metrics with error: %v", err)
-		return
-	}
-	f, err := os.OpenFile(tempFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		log.Warnf("unable to create file with error: %v", err)
-		return
-	}
-	defer f.Close()
-
-	if _, err := f.Write(data); err != nil {
-		log.Warnf("unable to write file with error: %v", err)
-		return
-	}
-
-	if err := os.Rename(tempFile, filename); err != nil {
-		log.Warnf("unable to move file with error: %v", err)
-		return
-	}
-
-	return
+func (metrics *Metrics) DayImported() {
+	metrics.daysImported.Inc(1)
 }
 
-func getFilename(path string) string {
-	dirname := filepath.Dir(path)
-	ext := filepath.Ext(path)
-	filename := filepath.Base(path)
-	filename = filename[:len(filename)-len(ext)]
-
-	return dirname + "/" + filename + ".import" + ext
+func (metrics *Metrics) MonthImported() {
+	metrics.monthsImported.Inc(1)
 }
 
 // WaitReady wait for metrics to be ready
@@ -137,16 +96,12 @@ func (metrics Metrics) WaitReady(deadline time.Duration) (err error) {
 func (metrics Metrics) Start() {
 	defer metrics.MarkDone()
 
-	if metrics.output == "" {
-		log.Warnf("no metrics output defined, skipping metrics persistence")
-		metrics.MarkReady()
-		return
-	}
-
-	output := getFilename(metrics.output)
 	ticker := time.NewTicker(metrics.refreshRate)
 	defer ticker.Stop()
 
+	if err := metrics.Hydrate(); err != nil {
+		log.Warn(err.Error())
+	}
 	metrics.MarkReady()
 
 	select {
@@ -156,17 +111,17 @@ func (metrics Metrics) Start() {
 		return
 	}
 
-	log.Infof("Start metrics daemon, update each %v into %v", metrics.refreshRate, output)
+	log.Infof("Start metrics daemon, update each %v into %v", metrics.refreshRate, metrics.output)
 
 	for {
 		select {
 		case <-metrics.Done():
 			log.Info("Stopping metrics daemon")
-			metrics.persist(output)
+			metrics.Persist()
 			log.Info("Stop metrics daemon")
 			return
 		case <-ticker.C:
-			metrics.persist(output)
+			metrics.Persist()
 		}
 	}
 }

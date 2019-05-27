@@ -20,6 +20,7 @@ import (
 
 	"github.com/jancajthaml-openbank/cnb-rates-rest/api"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/config"
+	"github.com/jancajthaml-openbank/cnb-rates-rest/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
@@ -29,6 +30,7 @@ import (
 type Program struct {
 	cfg       config.Configuration
 	interrupt chan os.Signal
+	metrics   metrics.Metrics
 	rest      api.Server
 	cancel    context.CancelFunc
 }
@@ -42,6 +44,7 @@ func Initialize() Program {
 	utils.SetupLogger(cfg.LogLevel)
 
 	storage := localfs.NewStorage(cfg.RootStorage)
+	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
 
 	restDaemon := api.NewServer(ctx, cfg.ServerPort, cfg.SecretsPath, &storage)
 
@@ -49,6 +52,7 @@ func Initialize() Program {
 		cfg:       cfg,
 		interrupt: make(chan os.Signal, 1),
 		rest:      restDaemon,
+		metrics:   metricsDaemon,
 		cancel:    cancel,
 	}
 }
