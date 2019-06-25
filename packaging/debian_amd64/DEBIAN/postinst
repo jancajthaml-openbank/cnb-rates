@@ -2,34 +2,43 @@
 
 set -e
 
+if [ "$(ps -o comm -p 1 --no-headers | tr -d ' ')" = "systemd" ] ; then
+  SYSTEMD_AVAIL=true
+else
+  SYSTEMD_AVAIL=false
+fi
+
+enable() {
+  wanted_by=$(cat /lib/systemd/system/${1} | sed -n -e 's/^.*WantedBy=//p')
+  mkdir -p /etc/systemd/system/${wanted_by}.wants
+  ln -s \
+    "/lib/systemd/system/${1}" \
+    "/etc/systemd/system/${wanted_by}.wants/${1}"
+}
+
+register_cron_job() {
+  ontime="30 14 * * * set -a; systemctl start cnb-rates-import"
+  crontab -l | grep -v 'cnb-rates-import' | crontab -
+  crontab -l | { cat; echo "${ontime}"; } | crontab -
+}
+
 case "$1" in
 
   configure)
-    if [ -f "/etc/init/cnb-rates.conf" ] ; then
-      if [ -d /run/systemd/system ] ; then
-        systemctl unmask \
-          cnb-rates.path \
-          cnb-rates-rest.service \
-          cnb-rates-import.service \
-          cnb-rates-batch.service \
-          cnb-rates.service \
-        >/dev/null
+    if [ -f /etc/init/cnb-rates.conf ] ; then
 
-        systemctl enable \
-          cnb-rates.path \
-          cnb-rates-import.service \
-          cnb-rates-rest.service \
-          cnb-rates.service \
-        >/dev/null
-      fi
+      enable cnb-rates.path
+      enable cnb-rates.service
+      enable cnb-rates-rest.service
+      enable cnb-rates-import.service
 
-      ontime="30 14 * * * set -a; systemctl start cnb-rates-import"
-      crontab -l | grep -v 'cnb-rates-import' | crontab -
-      crontab -l | { cat; echo "${ontime}"; } | crontab -
-
-      if [ -d /run/systemd/system ] ; then
+      if [ ${SYSTEMD_AVAIL} ] ; then
+        (systemctl daemon-reload || :)
         (systemctl start cnb-rates.service >/dev/null || :)
       fi
+
+      register_cron_job
+
     else
       (>&2 echo "/etc/init/cnb-rates.conf file not found")
       exit 1
