@@ -1,5 +1,5 @@
 Package: cnb-rates
-Version: 1.0.0+better-metrics
+Version: 1.0.1+collect-test-coverage
 Section: misc
 Priority: extra
 Architecture: amd64
