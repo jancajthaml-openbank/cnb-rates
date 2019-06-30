@@ -487,14 +487,20 @@ jobs:
           name: Unit test cnb-rates-rest
           command: /home/circleci/project/dev/lifecycle/test --pkg cnb-rates-rest
           no_output_timeout: 5m
+      - store_test_results:
+          path: /home/circleci/project/reports/unit-tests-cnb-rates-rest
       - run:
           name: Unit test cnb-rates-import
           command: /home/circleci/project/dev/lifecycle/test --pkg cnb-rates-import
           no_output_timeout: 5m
+      - store_test_results:
+          path: /home/circleci/project/reports/unit-tests-cnb-rates-import
       - run:
           name: Unit test cnb-rates-batch
           command: /home/circleci/project/dev/lifecycle/test --pkg cnb-rates-batch
           no_output_timeout: 5m
+      - store_test_results:
+          path: /home/circleci/project/reports/unit-tests-cnb-rates-batch
 
   # -------------------------------------------------------------------------- #
 
