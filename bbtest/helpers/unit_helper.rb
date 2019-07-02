@@ -71,6 +71,24 @@ class UnitHelper
     raise "no package to install" unless File.file?('/etc/bbtest/packages/cnb-rates.deb')
   end
 
+  def prepare_config()
+    defaults = {
+      "STORAGE" => "/data",
+      "LOG_LEVEL" => "DEBUG",
+      "CNB_GATEWAY" => "https://127.0.0.1:4000",
+      "METRICS_OUTPUT" => "/reports",
+      "METRICS_REFRESHRATE" => "1s",
+      "HTTP_PORT" => "443",
+      "SECRETS" => "/opt/cnb-rates/secrets",
+    }
+
+    config = Array[defaults.map {|k,v| "CNB_RATES_#{k}=#{v}"}]
+    config = config.join("\n").inspect.delete('\"')
+
+    %x(mkdir -p /etc/init)
+    %x(echo '#{config}' > /etc/init/cnb-rates.conf)
+  end
+
   def cleanup()
     %x(systemctl -t service --no-legend | awk '{ print $1 }' | sort -t @ -k 2 -g)
       .split("\n")

@@ -15,52 +15,28 @@
 package metrics
 
 import (
-	"context"
 	"fmt"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
-
-	metrics "github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 )
 
-// Metrics represents metrics subroutine
-type Metrics struct {
-	utils.DaemonSupport
-	output         string
-	refreshRate    time.Duration
-	daysImported   metrics.Counter
-	monthsImported metrics.Counter
-	gatewayLatency metrics.Timer
-	importLatency  metrics.Timer
-}
-
-// NewMetrics returns metrics fascade
-func NewMetrics(ctx context.Context, output string, refreshRate time.Duration) Metrics {
-	return Metrics{
-		DaemonSupport:  utils.NewDaemonSupport(ctx),
-		output:         output,
-		refreshRate:    refreshRate,
-		daysImported:   metrics.NewCounter(),
-		monthsImported: metrics.NewCounter(),
-		gatewayLatency: metrics.NewTimer(),
-		importLatency:  metrics.NewTimer(),
-	}
-}
-
+// TimeGatewayLatency measure execution of gateway sync
 func (metrics *Metrics) TimeGatewayLatency(f func()) {
 	metrics.gatewayLatency.Time(f)
 }
 
+// TimeImportLatency measure execution of import
 func (metrics *Metrics) TimeImportLatency(f func()) {
 	metrics.importLatency.Time(f)
 }
 
+// DayImported increments days imported by one
 func (metrics *Metrics) DayImported() {
 	metrics.daysImported.Inc(1)
 }
 
+// MonthImported increments months imported by one
 func (metrics *Metrics) MonthImported() {
 	metrics.monthsImported.Inc(1)
 }

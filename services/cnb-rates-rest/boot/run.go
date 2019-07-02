@@ -63,6 +63,7 @@ func (app Program) WaitReady(deadline time.Duration) error {
 
 // GreenLight daemons
 func (app Program) GreenLight() {
+	app.metrics.GreenLight()
 	app.rest.GreenLight()
 }
 
