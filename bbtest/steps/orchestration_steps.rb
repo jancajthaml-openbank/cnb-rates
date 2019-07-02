@@ -24,7 +24,7 @@ end
 
 step "cnb-rates is running with mocked CNB Gateway" do ||
   params = [
-    "CNB_GATEWAY=https://127.0.0.1:4000"
+    "CNB_GATEWAY=https://127.0.0.1:4000",
   ].join("\n")
 
   ts = if defined? @timeshift then @timeshift else Date.today end
@@ -36,7 +36,6 @@ step "cnb-rates is running with mocked CNB Gateway" do ||
   expect($?).to be_success, "failed to set time to #{formatted}"
   %x(systemctl restart cron)
   send "cnb-rates is reconfigured with", params
-
 end
 
 step "cnb-rates is reconfigured with" do |configuration|
@@ -47,7 +46,7 @@ step "cnb-rates is reconfigured with" do |configuration|
     "LOG_LEVEL" => "DEBUG",
     "CNB_GATEWAY" => "https://127.0.0.1:4000",
     "METRICS_OUTPUT" => "/reports",
-    "METRICS_REFRESHRATE" => "1h",
+    "METRICS_REFRESHRATE" => "1s",
     "HTTP_PORT" => "443",
     "SECRETS" => "/opt/cnb-rates/secrets",
   }
@@ -72,7 +71,7 @@ step "cnb-rates is reconfigured with" do |configuration|
   eventually() {
     ids.each { |e|
       out = %x(systemctl show -p SubState #{e} 2>&1 | sed 's/SubState=//g')
-      expect(out.strip).to eq("running")
+      expect(out.strip).to eq("running"), "#{e} is #{out.strip} expected running"
     }
   }
 end

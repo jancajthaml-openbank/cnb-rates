@@ -2,6 +2,8 @@ require 'json'
 require 'date'
 require 'json-schema'
 require 'thread'
+require 'uri'
+
 require_relative '../shims/harden_webrick'
 
 class CNBGetDailyMainRates < WEBrick::HTTPServlet::AbstractServlet
@@ -14,9 +16,18 @@ class CNBGetDailyMainRates < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def process(request)
-    query = request.query()
+    query = request.query_string.split('&').inject({}) do |result, q|
+      k,v = q.split('=')
+      if !v.nil?
+         result.merge({k => v})
+      elsif !result.key?(k)
+        result.merge({k => true})
+      else
+        result
+      end
+    end
 
-    if query.has_key?('date')
+    if query['date']
       for_date = Date.strptime(query['date'], "%d+%m+%Y")
     else
       for_date = Date.now
@@ -41,9 +52,18 @@ class CNBGetOtherFXRates < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def process(request)
-    query = request.query()
+    query = request.query_string.split('&').inject({}) do |result, q|
+      k,v = q.split('=')
+      if !v.nil?
+         result.merge({k => v})
+      elsif !result.key?(k)
+        result.merge({k => true})
+      else
+        result
+      end
+    end
 
-    if query.has_key?('month') && query.has_key?('year')
+    if query['month'] && query['year']
       for_date = Date.strptime(query['month'] + "." + query['year'], "%m.%Y").next_month.prev_day
     else
       for_date = Date.now

@@ -16,9 +16,10 @@ RSpec.configure do |config|
 
   config.register_ordering(:global) do |items|
     (install, others) = items.partition { |spec| spec.metadata[:install] }
+    (metrics, others) = others.partition { |spec| spec.metadata[:metrics] }
     (uninstall, others) = others.partition { |spec| spec.metadata[:uninstall] }
 
-    install + others.shuffle + uninstall
+    install + others.shuffle + metrics.shuffle + uninstall
   end
 
   $unit = UnitHelper.new()
@@ -35,6 +36,7 @@ RSpec.configure do |config|
 
     print "[ downloading unit ]\n"
     $unit.download()
+    $unit.prepare_config()
 
     print "[ suite started    ]\n"
   end

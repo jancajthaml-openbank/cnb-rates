@@ -15,40 +15,18 @@
 package metrics
 
 import (
-	"context"
 	"fmt"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
-
-	metrics "github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 )
 
-// Metrics represents metrics subroutine
-type Metrics struct {
-	utils.DaemonSupport
-	output          string
-	refreshRate     time.Duration
-	daysProcessed   metrics.Counter
-	monthsProcessed metrics.Counter
-}
-
-// NewMetrics returns metrics fascade
-func NewMetrics(ctx context.Context, output string, refreshRate time.Duration) Metrics {
-	return Metrics{
-		DaemonSupport:   utils.NewDaemonSupport(ctx),
-		output:          output,
-		refreshRate:     refreshRate,
-		daysProcessed:   metrics.NewCounter(),
-		monthsProcessed: metrics.NewCounter(),
-	}
-}
-
+// DayProcessed increments days processed by one
 func (metrics *Metrics) DayProcessed() {
 	metrics.daysProcessed.Inc(1)
 }
 
+// MonthProcessed increments months processed by one
 func (metrics *Metrics) MonthProcessed() {
 	metrics.monthsProcessed.Inc(1)
 }
