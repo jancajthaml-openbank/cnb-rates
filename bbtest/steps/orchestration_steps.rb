@@ -31,7 +31,9 @@ step "cnb-rates is running with mocked CNB Gateway" do ||
   formatted = ts.strftime("%Y-%m-%d %H:%M:%S")
 
   %x(timedatectl set-ntp 0)
+  expect($?).to be_success, "failed to set-ntp"
   %x(timedatectl set-local-rtc 0)
+  expect($?).to be_success, "failed to set-local-rtc"
   %x(timedatectl set-time "#{formatted}")
   expect($?).to be_success, "failed to set time to #{formatted}"
   %x(systemctl restart cron)
@@ -40,18 +42,7 @@ end
 
 step "cnb-rates is reconfigured with" do |configuration|
   params = Hash[configuration.split("\n").map(&:strip).reject(&:empty?).map { |el| el.split '=' }]
-
-  defaults = {
-    "STORAGE" => "/data",
-    "LOG_LEVEL" => "DEBUG",
-    "CNB_GATEWAY" => "https://127.0.0.1:4000",
-    "METRICS_OUTPUT" => "/reports",
-    "METRICS_REFRESHRATE" => "1s",
-    "HTTP_PORT" => "443",
-    "SECRETS" => "/opt/cnb-rates/secrets",
-  }
-
-  config = Array[defaults.merge(params).map {|k,v| "CNB_RATES_#{k}=#{v}"}]
+  config = Array[UnitHelper.default_config.merge(params).map {|k,v| "CNB_RATES_#{k}=#{v}"}]
   config = config.join("\n").inspect.delete('\"')
 
   %x(mkdir -p /etc/init)

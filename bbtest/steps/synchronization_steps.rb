@@ -17,8 +17,8 @@ step "all fx-main CNB data are downloaded" do ||
 end
 
 step "all fx-main CNB data are processed" do ||
-  send "journalctl of :unit contains following", "cnb-rates-batch.service", ">>> Start <<<"
-  send "journalctl of :unit contains following", "cnb-rates-batch.service", ">>> Stop <<<"
+  send "journalctl of :unit contains following", "cnb-rates-batch.service", ">>> Started <<<"
+  send "journalctl of :unit contains following", "cnb-rates-batch.service", ">>> Stopping <<<"
 
   date_from  = Date.parse('1991-01-01')
   date_to = if defined? @timeshift then @timeshift else Date.today end
