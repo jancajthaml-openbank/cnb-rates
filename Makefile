@@ -26,13 +26,13 @@ package-%: %
 
 .PHONY: bundle-binaries-%
 bundle-binaries-%: %
-	@docker-compose run --rm package --arch linux/$^ --pkg cnb-rates-rest
-	@docker-compose run --rm package --arch linux/$^ --pkg cnb-rates-import
-	@docker-compose run --rm package --arch linux/$^ --pkg cnb-rates-batch
+	@docker-compose run --rm package --arch linux/$^ --pkg cnb-rates-rest --output /project/packaging/bin
+	@docker-compose run --rm package --arch linux/$^ --pkg cnb-rates-import --output /project/packaging/bin
+	@docker-compose run --rm package --arch linux/$^ --pkg cnb-rates-batch --output /project/packaging/bin
 
 .PHONY: bundle-debian-%
 bundle-debian-%: %
-	@docker-compose run --rm debian -v $(VERSION)+$(META) --arch $^
+	@docker-compose run --rm debian --version $(VERSION)+$(META) --arch $^ --source /project/packaging
 
 .PHONY: bundle-docker
 bundle-docker:
@@ -62,9 +62,9 @@ sync:
 
 .PHONY: test
 test:
-	@docker-compose run --rm test --pkg cnb-rates-rest
-	@docker-compose run --rm test --pkg cnb-rates-import
-	@docker-compose run --rm test --pkg cnb-rates-batch
+	@docker-compose run --rm test --pkg cnb-rates-rest --output /project/reports
+	@docker-compose run --rm test --pkg cnb-rates-import --output /project/reports
+	@docker-compose run --rm test --pkg cnb-rates-batch --output /project/reports
 
 .PHONY: release
 release:
@@ -73,21 +73,26 @@ release:
 .PHONY: bbtest
 bbtest:
 	@(docker rm -f $$(docker ps -a --filter="name=cnb_rates_bbtest_amd64" -q) &> /dev/null || :)
-	@docker exec -it $$(\
-		docker run -d -ti \
+	@docker exec -t $$(\
+		docker run -d \
 			--name=cnb_rates_bbtest_amd64 \
-			-e UNIT_VERSION="$(VERSION)-$(META)" \
-			-e UNIT_ARCH=amd64 \
-			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-			-v /var/run/docker.sock:/var/run/docker.sock \
-			-v /var/lib/docker/containers:/var/lib/docker/containers \
-			-v $$(pwd)/bbtest:/opt/bbtest \
-			-v $$(pwd)/reports:/reports \
 			--cap-add=SYS_TIME \
+			-e IMAGE_VERSION="$(VERSION)-$(META)" \
+			-e UNIT_VERSION="$(VERSION)+$(META)" \
+			-e UNIT_ARCH=amd64 \
+			-v /var/run/docker.sock:/var/run/docker.sock:rw \
+			-v /var/lib/docker/containers:/var/lib/docker/containers:rw \
+			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+			-v $$(pwd)/bbtest:/opt/bbtest \
+			-v $$(pwd)/reports:/tmp/reports \
+			-w /opt/bbtest \
 		jancajthaml/bbtest:amd64 \
-	) rspec --require /opt/bbtest/spec.rb \
+	) rspec \
+		--colour \
+		--tty \
+		--require /opt/bbtest/spec.rb \
 		--format documentation \
-		--format RspecJunitFormatter \
-		--out junit.xml \
+		--format RSpec::JUnit \
+		--out /tmp/reports/blackbox-tests/results.xml \
 		--pattern /opt/bbtest/features/*.feature
 	@(docker rm -f $$(docker ps -a --filter="name=cnb_rates_bbtest_amd64" -q) &> /dev/null || :)

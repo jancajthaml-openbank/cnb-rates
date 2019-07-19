@@ -5,7 +5,7 @@ ConditionPathExists=/etc/init/cnb-rates.conf
 
 [Service]
 Type=oneshot
-ExecStart=/bin/true
+ExecStart=/bin/echo start cnb-rates namespace
 RemainAfterExit=yes
 
 [Install]

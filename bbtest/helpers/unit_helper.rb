@@ -14,75 +14,69 @@ class UnitHelper
 
   attr_reader :units
 
+  @@default_config = {
+    "STORAGE" => "/data",
+    "LOG_LEVEL" => "DEBUG",
+    "CNB_GATEWAY" => "https://127.0.0.1:4000",
+    "METRICS_REFRESHRATE" => "1s",
+    "METRICS_OUTPUT" => "/tmp/reports",
+    #"METRICS_CONTINUOUS" => "true",  # fixme implement
+    "HTTP_PORT" => "443",
+    "SECRETS" => "/opt/cnb-rates/secrets",
+  }.freeze
+
+  def UnitHelper.default_config
+    return @@default_config
+  end
+
   def download()
-    raise "no version specified" unless ENV.has_key?('UNIT_VERSION')
+    raise "no unit version specified" unless ENV.has_key?('UNIT_VERSION')
+    raise "no image version specified" unless ENV.has_key?('IMAGE_VERSION')
     raise "no arch specified" unless ENV.has_key?('UNIT_ARCH')
 
-    version = ENV['UNIT_VERSION'].sub(/v/, '')
-    parts = version.split('-')
-
-    docker_version = ""
-    debian_version = ""
-
-    if parts.length > 1
-      branch = version[parts[0].length+1..-1]
-      docker_version = "#{parts[0]}-#{branch}"
-      debian_version = "#{parts[0]}+#{branch}"
-    elsif parts.length == 1
-      docker_version = parts[0]
-      debian_version = parts[0]
-    end
-
+    image_version = ENV['IMAGE_VERSION']
+    debian_version = ENV['UNIT_VERSION'].sub(/v/, '')
+    side_image_name = "cnb_rates_artifacts#{image_version}"
     arch = ENV['UNIT_ARCH']
 
-    FileUtils.mkdir_p "/opt/artifacts"
-    %x(rm -rf /opt/artifacts/*)
+    FileUtils.mkdir_p "/tmp/artifacts"
+    %x(rm -rf /tmp/artifacts/*)
 
-    FileUtils.mkdir_p "/etc/bbtest/packages"
-    %x(rm -rf /etc/bbtest/packages/*)
+    FileUtils.mkdir_p "/tmp/packages"
+    %x(rm -rf /tmp/packages/*)
 
     file = Tempfile.new('search_artifacts')
 
     begin
       file.write([
         "FROM alpine",
-        "COPY --from=openbank/cnb-rates:v#{docker_version} /opt/artifacts/cnb-rates_#{debian_version}_#{arch}.deb /opt/artifacts/cnb-rates.deb",
-        "RUN ls -la /opt/artifacts"
+        "COPY --from=openbank/cnb-rates:#{image_version} /opt/artifacts/cnb-rates_#{debian_version}_#{arch}.deb /tmp/artifacts/cnb-rates.deb",
+        "ENTRYPOINT /bin/ls",
+        "CMD -la /tmp/artifacts"
       ].join("\n"))
       file.close
 
-      IO.popen("docker build -t cnb_rates_artifacts - < #{file.path}") do |stream|
+      IO.popen("docker build -t #{side_image_name} - < #{file.path}") do |stream|
         stream.each do |line|
           puts line
         end
       end
-      raise "failed to build cnb_rates_artifacts" unless $? == 0
-
-      %x(docker run --name cnb_rates_artifacts-scratch cnb_rates_artifacts /bin/true)
-      %x(docker cp cnb_rates_artifacts-scratch:/opt/artifacts/ /opt)
+      raise "failed to build #{side_image_name}" unless $? == 0
+      %x(docker run --name #{side_image_name}-run #{side_image_name})
+      %x(docker cp #{side_image_name}-run:/tmp/artifacts/ /tmp)
     ensure
-      %x(docker rmi -f cnb_rates_artifacts)
-      %x(docker rm cnb_rates_artifacts-scratch)
+      %x(docker rmi -f #{side_image_name})
+      %x(docker rm -f #{side_image_name}-run)
       file.delete
     end
 
-    FileUtils.mv('/opt/artifacts/cnb-rates.deb', '/etc/bbtest/packages/cnb-rates.deb')
+    FileUtils.mv('/tmp/artifacts/cnb-rates.deb', '/tmp/packages/cnb-rates.deb')
 
-    raise "no package to install" unless File.file?('/etc/bbtest/packages/cnb-rates.deb')
+    raise "no package to install" unless File.file?('/tmp/packages/cnb-rates.deb')
   end
 
   def prepare_config()
-    defaults = {
-      "STORAGE" => "/data",
-      "LOG_LEVEL" => "DEBUG",
-      "CNB_GATEWAY" => "https://127.0.0.1:4000",
-      "METRICS_OUTPUT" => "/reports",
-      "METRICS_REFRESHRATE" => "1s",
-      "HTTP_PORT" => "443",
-      "SECRETS" => "/opt/cnb-rates/secrets",
-    }
-
-    config = Array[defaults.map {|k,v| "CNB_RATES_#{k}=#{v}"}]
+    config = Array[@@default_config.map {|k,v| "CNB_RATES_#{k}=#{v}"}]
     config = config.join("\n").inspect.delete('\"')
 
     %x(mkdir -p /etc/init)
@@ -90,46 +84,25 @@ class UnitHelper
   end
 
   def cleanup()
-    %x(systemctl -t service --no-legend | awk '{ print $1 }' | sort -t @ -k 2 -g)
+    %x(systemctl list-units --no-legend | awk '{ print $1 }' | sort -t @ -k 2 -g)
       .split("\n")
       .map(&:strip)
       .reject { |x| x.empty? || !x.start_with?("cnb-rates") }
-      .map { |x| x.chomp(".service") }
       .each { |unit|
-        if unit.start_with?("cnb-rates-import@") || unit.start_with?("cnb-rates-batch@")
-          %x(journalctl -o short-precise -u #{unit}.service --no-pager > /reports/#{unit.gsub('@','_')}.log 2>&1)
-          %x(systemctl stop #{unit} 2>&1)
-          %x(systemctl disable #{unit} 2>&1)
-          %x(journalctl -o short-precise -u #{unit}.service --no-pager > /reports/#{unit.gsub('@','_')}.log 2>&1)
-        else
-          %x(journalctl -o short-precise -u #{unit}.service --no-pager > /reports/#{unit.gsub('@','_')}.log 2>&1)
-        end
+        %x(journalctl -o short-precise -u #{unit} --no-pager > /tmp/reports/bbtest-#{unit.gsub('@','_').gsub('.','-')}.log 2>&1)
       }
   end
 
   def teardown()
-    %x(systemctl -t service --no-legend | awk '{ print $1 }' | sort -t @ -k 2 -g)
+    %x(systemctl list-units --no-legend | awk '{ print $1 }' | sort -t @ -k 2 -g)
       .split("\n")
       .map(&:strip)
       .reject { |x| x.empty? || !x.start_with?("cnb-rates") }
-      .map { |x| x.chomp(".service") }
       .each { |unit|
-        %x(journalctl -o short-precise -u #{unit}.service --no-pager > /reports/#{unit.gsub('@','_')}.log 2>&1)
+        %x(journalctl -o short-precise -u #{unit} --no-pager > /tmp/reports/bbtest-#{unit.gsub('@','_').gsub('.','-')}.log 2>&1)
         %x(systemctl stop #{unit} 2>&1)
-        %x(journalctl -o short-precise -u #{unit}.service --no-pager > /reports/#{unit.gsub('@','_')}.log 2>&1)
-
-        if unit.include?("@")
-          metrics_file = "/opt/#{unit[/[^@]+/]}/metrics/metrics.#{unit[/([^@]+)$/]}.json"
-        else
-          metrics_file = "/opt/#{unit}/metrics/metrics.json"
-        end
-
-        File.open(metrics_file, 'rb') { |fr|
-          File.open("/reports/metrics/#{unit.gsub('@','_')}.json", 'w') { |fw|
-            fw.write(fr.read)
-          }
-        } if File.file?(metrics_file)
       }
   end
 
 end
+

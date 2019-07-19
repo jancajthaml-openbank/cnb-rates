@@ -1,5 +1,5 @@
 Package: cnb-rates
-Version: 1.0.1+persistence-unit-test-coverage
+Version: 1.0.1+jenkins-pipeline
 Section: misc
 Priority: extra
 Architecture: amd64

@@ -26,15 +26,15 @@ case "$1" in
 
   configure)
     if [ -f /etc/init/cnb-rates.conf ] ; then
-
       enable cnb-rates.path
       enable cnb-rates.service
       enable cnb-rates-rest.service
       enable cnb-rates-import.service
 
       if [ ${SYSTEMD_AVAIL} ] ; then
-        (systemctl daemon-reload || :)
-        (systemctl start cnb-rates.service >/dev/null || :)
+        systemctl daemon-reload
+        systemctl start cnb-rates.service
+        systemctl start cnb-rates.path
       fi
 
       register_cron_job
