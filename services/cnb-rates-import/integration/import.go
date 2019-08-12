@@ -238,6 +238,7 @@ func (cnb CNBRatesImport) importRoundtrip() {
 	fxMainHistoryStart := time.Date(1991, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
 	fxOtherHistoryStart := time.Date(2004, time.Month(5), 1, 0, 0, 0, 0, time.UTC)
 	today := now.AddDate(0, 0, -1)
+	yesterday := today.AddDate(0, 0, -1)
 
 	months := utils.GetMonthsBetween(fxMainHistoryStart, today)
 	for _, month := range months {
@@ -249,7 +250,13 @@ func (cnb CNBRatesImport) importRoundtrip() {
 		nextMonth := time.Date(month.Year(), month.Month()+1, 0, 0, 0, 0, 0, time.UTC)
 		nextMonth.AddDate(0, 1, 0).Add(time.Nanosecond * -1)
 
-		days := utils.GetDatesBetween(currentMonth, nextMonth)
+		var days []time.Time
+		if nextMonth.After(yesterday) {
+			days = utils.GetDatesBetween(currentMonth, yesterday)
+		} else {
+			days = utils.GetDatesBetween(currentMonth, nextMonth)
+		}
+
 		if len(days) <= 2 {
 			continue
 		}

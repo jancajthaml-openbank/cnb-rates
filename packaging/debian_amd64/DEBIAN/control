@@ -1,5 +1,5 @@
 Package: cnb-rates
-Version: 1.0.1+jenkins-pipeline
+Version: 1.0.1+use-python-for-bbtest
 Section: misc
 Priority: extra
 Architecture: amd64
