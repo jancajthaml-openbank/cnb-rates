@@ -1,8 +1,6 @@
 [Unit]
 Description=openbank CNB Rates Import service
 PartOf=cnb-rates.service
-After=cnb-rates.service
-RefuseManualStart=true
 ConditionPathExists=/etc/init/cnb-rates.conf
 
 [Service]

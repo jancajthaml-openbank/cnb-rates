@@ -1,8 +1,7 @@
-Feature: Verify download
+Feature: CNB Rates import
 
-  Scenario: eventually downloads historic rates from CNB cloud
-    Given current time is "Mon Jan 4 14:29:59 1993"
-    And   cnb-rates is running with mocked CNB Gateway
+  Scenario: eventually downloads historic rates from cloud
+    Given current time is "1991-03-09T14:29:57+0058"
 
     Then  all fx-main CNB data are downloaded
     And   all fx-main CNB data are processed

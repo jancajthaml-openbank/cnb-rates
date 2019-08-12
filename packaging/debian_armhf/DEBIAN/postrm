@@ -18,7 +18,9 @@ delete_service_files() {
   delete /etc/systemd/cnb-rates.service.wants/cnb-rates-rest.service
   delete /lib/systemd/system/cnb-rates-rest.service
 
-  delete /etc/systemd/cnb-rates.service.wants/cnb-rates-import.service
+  delete /etc/systemd/cnb-rates.service.wants/cnb-rates-import.timer
+  delete /lib/systemd/system/cnb-rates-import.timer
+
   delete /lib/systemd/system/cnb-rates-import.service
 
   delete /etc/systemd/cnb-rates.service.wants/cnb-rates.path
@@ -32,15 +34,9 @@ delete_displace_files() {
   delete /etc/init/cnb-rates.conf
 }
 
-unregister_cron_job() {
-  crontab -l | grep -v 'cnb-rates-import' | crontab -
-}
-
 case "$1" in
 
   purge)
-    unregister_cron_job
-
     delete_service_files
     delete_displace_files
 
@@ -51,7 +47,6 @@ case "$1" in
   ;;
 
   remove)
-    unregister_cron_job
 
     if [ ${SYSTEMD_AVAIL} ] ; then
       (systemctl -a -t service --no-legend  | awk '$1 ~ /cnb-rates/ { print $1 }' | xargs -I {} systemctl stop {} 2> /dev/null || :)

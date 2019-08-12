@@ -293,14 +293,19 @@ pipeline {
                 sh "docker system prune"
             }
             script {
-                archiveArtifacts(
-                    allowEmptyArchive: true,
-                    artifacts: 'reports/bbtest-*.log'
-                )
-                archiveArtifacts(
-                    allowEmptyArchive: true,
-                    artifacts: 'packaging/bin/*'
-                )
+                dir('reports') {
+                    archiveArtifacts(
+                        allowEmptyArchive: true,
+                        artifacts: 'blackbox-tests/**/*'
+                    )
+                }
+                dir('packaging/bin') {
+                    archiveArtifacts(
+                        allowEmptyArchive: true,
+                        artifacts: '*'
+                    )
+                }
+
                 publishHTML(target: [
                     allowMissing: true,
                     alwaysLinkToLastBuild: false,
@@ -337,9 +342,10 @@ pipeline {
                     allowEmptyResults: true,
                     testResults: 'reports/unit-tests/cnb-rates-rest-results.xml'
                 )
-                junit(
+                cucumber(
                     allowEmptyResults: true,
-                    testResults: 'reports/blackbox-tests/results.xml'
+                    fileIncludePattern: '*',
+                    jsonReportDirectory: 'reports/blackbox-tests/cucumber'
                 )
 
             }
