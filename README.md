@@ -27,9 +27,3 @@ I take the security of my systems seriously, and I value input from the security
 ## Author
 
 Jan Cajthaml (a.k.a johnny)
-
-
-
-### FIXME
-
-fixme introduce Timer with onCalendar
