@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019, Jan Cajthaml <jan.cajthaml@gmail.com>
+// Copyright (c) 2016-2020, Jan Cajthaml <jan.cajthaml@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ type Batch struct {
 // NewBatch returns batch fascade
 func NewBatch(ctx context.Context, metrics *metrics.Metrics, storage *localfs.Storage) Batch {
 	return Batch{
-		DaemonSupport: utils.NewDaemonSupport(ctx),
+		DaemonSupport: utils.NewDaemonSupport(ctx, "batch"),
 		storage:       storage,
 		metrics:       metrics,
 	}
@@ -83,10 +83,6 @@ func (batch Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
 	cachePath := utils.FXMainOfflineDirectory() + "/"
 
 	for _, day := range days {
-		if batch.IsDone() {
-			return nil
-		}
-
 		log.Infof("Processing new fx-main for %s", day)
 
 		reader, err := batch.storage.GetFileReader(cachePath + day)
@@ -131,10 +127,6 @@ func (batch Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
 
 	cachePath := utils.FXOtherOfflineDirectory() + "/"
 	for _, day := range days {
-		if batch.IsDone() {
-			return nil
-		}
-
 		log.Infof("Processing new fx-other for %s", day)
 
 		reader, err := batch.storage.GetFileReader(cachePath + day)
@@ -181,24 +173,31 @@ func (batch Batch) ProcessNewFX() {
 
 // Start handles everything needed to start batch daemon
 func (batch Batch) Start() {
-	defer batch.MarkDone()
-
 	batch.MarkReady()
 
 	select {
 	case <-batch.CanStart:
 		break
 	case <-batch.Done():
+		batch.MarkDone()
 		return
 	}
 
-	log.Info("Start cnb-rates-batch daemon")
+	log.Info("Start cnb-batch daemon")
 
 	batch.ProcessNewFX()
 
-	log.Info("Stopping cnb-rates-batch daemon")
-	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
-	log.Info("Stop cnb-rates-batch daemon")
+	go func() {
+		for {
+			select {
+			case <-batch.Done():
+				batch.MarkDone()
+				return
+			}
+		}
+	}()
 
-	return
+	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+	<-batch.IsDone
+	log.Info("Stop batch-batch daemon")
 }

@@ -1,4 +1,6 @@
-module github.com/jancajthaml-openbank/cnb-rates/services/cnb-rates-batch
+module github.com/jancajthaml-openbank/cnb-rates-batch
+
+go 1.14
 
 require (
 	github.com/jancajthaml-openbank/local-fs v1.0.4

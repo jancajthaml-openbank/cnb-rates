@@ -1,5 +1,5 @@
 Package: cnb-rates
-Version: 1.0.1+use-python-for-bbtest
+Version: 1.0.2+improve-daemons
 Section: misc
 Priority: extra
 Architecture: amd64
