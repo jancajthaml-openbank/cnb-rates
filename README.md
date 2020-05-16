@@ -2,6 +2,8 @@
 
 Czech National Bank Exchange Rates Import
 
+![Health Check](https://github.com/jancajthaml-openbank/cnb-rates/workflows/Health%20Check/badge.svg)
+
 [![godoc for jancajthaml-openbank/cnb-rates](https://godoc.org/github.com/nathany/looper?status.svg)](https://godoc.org/github.com/jancajthaml-openbank/cnb-rates) [![CircleCI](https://circleci.com/gh/jancajthaml-openbank/cnb-rates/tree/master.svg?style=shield)](https://circleci.com/gh/jancajthaml-openbank/cnb-rates/tree/master)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/jancajthaml-openbank/cnb-rates)](https://goreportcard.com/report/github.com/jancajthaml-openbank/cnb-rates) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c3185b6c5940475c8773c98d754bd17c)](https://www.codacy.com/app/jancajthaml-openbank/cnb-rates?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jancajthaml-openbank/cnb-rates&amp;utm_campaign=Badge_Grade) [![codebeat badge](https://codebeat.co/badges/2baf283e-9f92-4e61-af1c-d8d37a688b87)](https://codebeat.co/projects/github-com-jancajthaml-openbank-cnb-rates-master)
