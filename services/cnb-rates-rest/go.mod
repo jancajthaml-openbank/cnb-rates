@@ -1,4 +1,6 @@
-module github.com/jancajthaml-openbank/cnb-rates/services/cnb-rates-rest
+module github.com/jancajthaml-openbank/cnb-rates-rest
+
+go 1.14
 
 require (
 	github.com/gorilla/mux v1.7.4

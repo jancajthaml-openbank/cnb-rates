@@ -44,7 +44,7 @@ type CNBRatesImport struct {
 // NewCNBRatesImport returns cnb rates import fascade
 func NewCNBRatesImport(ctx context.Context, cfg config.Configuration, metrics *metrics.Metrics, storage *localfs.Storage) CNBRatesImport {
 	return CNBRatesImport{
-		DaemonSupport: utils.NewDaemonSupport(ctx),
+		DaemonSupport: utils.NewDaemonSupport(ctx, "import"),
 		storage:       storage,
 		cnbGateway:    cfg.CNBGateway,
 		metrics:       metrics,
@@ -125,10 +125,6 @@ func (cnb CNBRatesImport) syncMainRates(days []time.Time) error {
 			case date, ok := <-queue:
 				if !ok {
 					return
-				}
-				if cnb.IsDone() {
-					wg.Done()
-					continue
 				}
 
 				cachePath := utils.FXMainOfflinePath(date)
@@ -242,9 +238,6 @@ func (cnb CNBRatesImport) importRoundtrip() {
 
 	months := utils.GetMonthsBetween(fxMainHistoryStart, today)
 	for _, month := range months {
-		if cnb.IsDone() {
-			return
-		}
 
 		currentMonth := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, time.UTC)
 		nextMonth := time.Date(month.Year(), month.Month()+1, 0, 0, 0, 0, 0, time.UTC)
@@ -276,53 +269,33 @@ func (cnb CNBRatesImport) importRoundtrip() {
 	}
 }
 
-// WaitReady wait for cnb rates import to be ready
-func (cnb CNBRatesImport) WaitReady(deadline time.Duration) (err error) {
-	defer func() {
-		if e := recover(); e != nil {
-			switch x := e.(type) {
-			case string:
-				err = fmt.Errorf(x)
-			case error:
-				err = x
-			default:
-				err = fmt.Errorf("unknown panic")
-			}
-		}
-	}()
-
-	ticker := time.NewTicker(deadline)
-	select {
-	case <-cnb.IsReady:
-		ticker.Stop()
-		err = nil
-		return
-	case <-ticker.C:
-		err = fmt.Errorf("cnb-rates-import daemon was not ready within %v seconds", deadline)
-		return
-	}
-}
-
 // Start handles everything needed to start cnb rates import daemon
 func (cnb CNBRatesImport) Start() {
-	defer cnb.MarkDone()
-
 	cnb.MarkReady()
 
 	select {
 	case <-cnb.CanStart:
 		break
 	case <-cnb.Done():
+		cnb.MarkDone()
 		return
 	}
 
-	log.Infof("Start cnb-rates-import daemon, sync %v now", cnb.cnbGateway)
+	log.Infof("Start cnb-import daemon, sync %v now", cnb.cnbGateway)
 
 	cnb.importRoundtrip()
 
-	log.Info("Stopping cnb-rates-import daemon")
-	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
-	log.Info("Stop cnb-rates-import daemon")
+	go func() {
+		for {
+			select {
+			case <-cnb.Done():
+				cnb.MarkDone()
+				return
+			}
+		}
+	}()
 
-	return
+	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+	<-cnb.IsDone
+	log.Info("Stop cnb-import daemon")
 }
