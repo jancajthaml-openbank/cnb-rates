@@ -36,13 +36,13 @@ import (
 type CNBRatesImport struct {
 	utils.DaemonSupport
 	cnbGateway string
-	storage    *localfs.Storage
+	storage    *localfs.PlaintextStorage
 	metrics    *metrics.Metrics
 	httpClient Client
 }
 
 // NewCNBRatesImport returns cnb rates import fascade
-func NewCNBRatesImport(ctx context.Context, cfg config.Configuration, metrics *metrics.Metrics, storage *localfs.Storage) CNBRatesImport {
+func NewCNBRatesImport(ctx context.Context, cfg config.Configuration, metrics *metrics.Metrics, storage *localfs.PlaintextStorage) CNBRatesImport {
 	return CNBRatesImport{
 		DaemonSupport: utils.NewDaemonSupport(ctx, "import"),
 		storage:       storage,

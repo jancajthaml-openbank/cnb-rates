@@ -21,7 +21,7 @@ import (
 )
 
 // LoadRates rehydrates rates entities state from storage
-func LoadRates(storage *localfs.Storage, tenant string) ([]string, error) {
+func LoadRates(storage *localfs.PlaintextStorage, tenant string) ([]string, error) {
 	path := utils.TokensPath(tenant)
 	ok, err := storage.Exists(path)
 	if err != nil || !ok {
