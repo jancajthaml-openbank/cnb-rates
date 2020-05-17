@@ -34,7 +34,7 @@ import (
 // api of http
 type Server struct {
 	utils.DaemonSupport
-	Storage    *localfs.Storage
+	Storage    *localfs.PlaintextStorage
 	underlying *http.Server
 	router     *mux.Router
 	key        []byte
@@ -75,7 +75,7 @@ func cloneTLSConfig(cfg *tls.Config) *tls.Config {
 }
 
 // NewServer returns new secure server instance
-func NewServer(ctx context.Context, port int, secretsPath string, storage *localfs.Storage) Server {
+func NewServer(ctx context.Context, port int, secretsPath string, storage *localfs.PlaintextStorage) Server {
 	router := mux.NewRouter()
 
 	cert, err := ioutil.ReadFile(secretsPath + "/domain.local.crt")
@@ -93,7 +93,7 @@ func NewServer(ctx context.Context, port int, secretsPath string, storage *local
 		Storage:       storage,
 		router:        router,
 		underlying: &http.Server{
-			Addr:         fmt.Sprintf(":%d", port),
+			Addr:         fmt.Sprintf("127.0.0.1:%d", port),
 			ReadTimeout:  5 * time.Second,
 			WriteTimeout: 5 * time.Second,
 			Handler:      router,

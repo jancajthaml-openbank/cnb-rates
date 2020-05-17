@@ -28,8 +28,8 @@ import (
 
 // Program encapsulate initialized application
 type Program struct {
-	cfg       config.Configuration
 	interrupt chan os.Signal
+	cfg       config.Configuration
 	metrics   metrics.Metrics
 	rest      api.Server
 	cancel    context.CancelFunc
@@ -43,14 +43,14 @@ func Initialize() Program {
 
 	utils.SetupLogger(cfg.LogLevel)
 
-	storage := localfs.NewStorage(cfg.RootStorage)
+	storage := localfs.NewPlaintextStorage(cfg.RootStorage)
 	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
 
 	restDaemon := api.NewServer(ctx, cfg.ServerPort, cfg.SecretsPath, &storage)
 
 	return Program{
-		cfg:       cfg,
 		interrupt: make(chan os.Signal, 1),
+		cfg:       cfg,
 		rest:      restDaemon,
 		metrics:   metricsDaemon,
 		cancel:    cancel,

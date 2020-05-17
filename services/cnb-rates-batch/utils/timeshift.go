@@ -21,9 +21,7 @@ func GetDatesForYear(year string) []time.Time {
 	if err != nil {
 		return nil
 	}
-
 	dates := make([]time.Time, 0)
-
 	for i := 1; i < 13; i++ {
 		startDate := time.Date(date.Year(), time.Month(i), 1, 0, 0, 0, 0, time.UTC)
 		endDate := startDate.AddDate(0, 1, 0).Add(time.Nanosecond * -1)
@@ -36,13 +34,11 @@ func GetDatesForYear(year string) []time.Time {
 			}
 		}
 	}
-
 	return dates
 }
 
 func GetMonthsBetween(startDate time.Time, endDate time.Time) []time.Time {
 	dates := make([]time.Time, 0)
-
 	for ; startDate.Before(endDate); startDate = startDate.AddDate(0, 1, 0) {
 		dates = append(dates, startDate.AddDate(0, 1, 0).Add(time.Nanosecond*-1))
 	}
@@ -51,7 +47,6 @@ func GetMonthsBetween(startDate time.Time, endDate time.Time) []time.Time {
 
 func GetDatesBetween(startDate time.Time, endDate time.Time) []time.Time {
 	dates := make([]time.Time, 0)
-
 	for ; startDate.Before(endDate); startDate = startDate.AddDate(0, 0, 1) {
 		switch startDate.Weekday() {
 		case time.Sunday, time.Saturday:
@@ -60,6 +55,5 @@ func GetDatesBetween(startDate time.Time, endDate time.Time) []time.Time {
 			dates = append(dates, startDate)
 		}
 	}
-
 	return dates
 }

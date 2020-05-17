@@ -37,31 +37,25 @@ func (entity *Exchange) UnmarshalText(data []string) error {
 	if entity == nil {
 		return fmt.Errorf("cannot unmarshall to nil pointer")
 	}
-
 	if len(data) < 5 {
 		return fmt.Errorf("invalid data")
 	}
-
 	amount, ok := new(money.Dec).SetString(data[2])
 	if !ok {
 		return fmt.Errorf("invalid amount %s", data[2])
 	}
-
 	rate, ok := new(money.Dec).SetString(data[4])
 	if !ok {
 		return fmt.Errorf("invalid rate %s", data[4])
 	}
-
 	if len(data[3]) != 3 ||
 		!((data[3][0] >= 'A' && data[3][0] <= 'Z') &&
 			(data[3][1] >= 'A' && data[3][1] <= 'Z') &&
 			(data[3][2] >= 'A' && data[3][2] <= 'Z')) {
 		return fmt.Errorf("invalid currency %s", data[3])
 	}
-
 	entity.Currency = data[3]
 	entity.Rate = new(money.Dec).QuoRound(rate, amount, 35, money.RoundHalfEven)
-
 	return nil
 }
 
