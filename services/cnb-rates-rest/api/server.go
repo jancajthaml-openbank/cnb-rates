@@ -180,6 +180,6 @@ func (server Server) Start() {
 		}
 	}()
 
-	<-server.IsDone
+	server.WaitStop()
 	log.Info("Stop http-server daemon")
 }

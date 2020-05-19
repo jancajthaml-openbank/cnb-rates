@@ -30,8 +30,7 @@ import (
 type Program struct {
 	interrupt chan os.Signal
 	cfg       config.Configuration
-	metrics   metrics.Metrics
-	cnb       integration.CNBRatesImport
+	daemons   []utils.Daemon
 	cancel    context.CancelFunc
 }
 
@@ -44,15 +43,18 @@ func Initialize() Program {
 	utils.SetupLogger(cfg.LogLevel)
 
 	storage := localfs.NewPlaintextStorage(cfg.RootStorage)
-	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
 
-	cnb := integration.NewCNBRatesImport(ctx, cfg, &metricsDaemon, &storage)
+	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
+	cnbDaemon := integration.NewCNBRatesImport(ctx, cfg, &metricsDaemon, &storage)
+
+	var daemons = make([]utils.Daemon, 0)
+	daemons = append(daemons, metricsDaemon)
+	daemons = append(daemons, cnbDaemon)
 
 	return Program{
 		interrupt: make(chan os.Signal, 1),
 		cfg:       cfg,
-		metrics:   metricsDaemon,
-		cnb:       cnb,
+		daemons:   daemons,
 		cancel:    cancel,
 	}
 }

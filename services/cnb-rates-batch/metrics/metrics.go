@@ -63,6 +63,6 @@ func (metrics Metrics) Start() {
 		}
 	}()
 
-	<-metrics.IsDone
+	metrics.WaitStop()
 	log.Info("Stop metrics daemon")
 }
