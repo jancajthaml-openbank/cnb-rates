@@ -76,6 +76,6 @@ services:
     build:
       dockerfile: Dockerfile
       context: .
-    image: openbank/lake
+    image: openbank/cnb-rates
 
 # ---------------------------------------------------------------------------- #
