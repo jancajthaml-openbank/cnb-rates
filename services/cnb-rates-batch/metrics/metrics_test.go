@@ -13,7 +13,7 @@ func TestMetrics(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	entity := NewMetrics(ctx, "", time.Hour)
+	entity := NewMetrics(ctx, "/tmp", time.Hour)
 
 	t.Log("DayProcessed properly increments number of processed days")
 	{

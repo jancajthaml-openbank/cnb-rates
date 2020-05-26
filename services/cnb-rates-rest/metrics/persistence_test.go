@@ -6,10 +6,89 @@ import (
 	"testing"
 	"time"
 
+	localfs "github.com/jancajthaml-openbank/local-fs"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMarshalJSON(t *testing.T) {
+
+	t.Log("error when caller is nil")
+	{
+		var entity *Metrics
+		_, err := entity.MarshalJSON()
+		assert.EqualError(t, err, "cannot marshall nil")
+	}
+
+	t.Log("error when values are nil")
+	{
+		entity := Metrics{}
+		_, err := entity.MarshalJSON()
+		assert.EqualError(t, err, "cannot marshall nil references")
+	}
+
+	t.Log("happy path")
+	{
+		entity := Metrics{
+			gatewayLatency: metrics.NewTimer(),
+			importLatency:  metrics.NewTimer(),
+		}
+
+		entity.gatewayLatency.Update(time.Duration(1))
+		entity.importLatency.Update(time.Duration(2))
+
+		actual, err := entity.MarshalJSON()
+
+		require.Nil(t, err)
+
+		data := []byte("{\"gatewayLatency\":1,\"importLatency\":2}")
+
+		assert.Equal(t, data, actual)
+	}
+}
+
+func TestUnmarshalJSON(t *testing.T) {
+
+	t.Log("error when caller is nil")
+	{
+		var entity *Metrics
+		err := entity.UnmarshalJSON([]byte(""))
+		assert.EqualError(t, err, "cannot unmarshall to nil")
+	}
+
+	t.Log("error when values are nil")
+	{
+		entity := Metrics{}
+		err := entity.UnmarshalJSON([]byte(""))
+		assert.EqualError(t, err, "cannot unmarshall to nil references")
+	}
+
+	t.Log("error on malformed data")
+	{
+		entity := Metrics{
+			gatewayLatency: metrics.NewTimer(),
+			importLatency:  metrics.NewTimer(),
+		}
+
+		data := []byte("{")
+		assert.NotNil(t, entity.UnmarshalJSON(data))
+	}
+
+	t.Log("happy path")
+	{
+		entity := Metrics{
+			gatewayLatency: metrics.NewTimer(),
+			importLatency:  metrics.NewTimer(),
+		}
+
+		data := []byte("{\"gatewayLatency\":1,\"importLatency\":2}")
+		require.Nil(t, entity.UnmarshalJSON(data))
+
+		assert.Equal(t, float64(1), entity.gatewayLatency.Percentile(0.95))
+		assert.Equal(t, float64(2), entity.importLatency.Percentile(0.95))
+	}
+}
 
 func TestPersist(t *testing.T) {
 
@@ -25,26 +104,12 @@ func TestPersist(t *testing.T) {
 		assert.EqualError(t, entity.Persist(), "cannot marshall nil references")
 	}
 
-	t.Log("error when cannot open tempfile for writing")
-	{
-		entity := Metrics{
-			output:         "/sys/kernel/security",
-			gatewayLatency: metrics.NewTimer(),
-			importLatency:  metrics.NewTimer(),
-		}
-
-		assert.NotNil(t, entity.Persist())
-	}
-
 	t.Log("happy path")
 	{
-		tmpfile, err := ioutil.TempFile(os.TempDir(), "test_metrics_persist")
-
-		require.Nil(t, err)
-		defer os.Remove(tmpfile.Name())
+		defer os.Remove("/tmp/metrics.json")
 
 		entity := Metrics{
-			output:         tmpfile.Name(),
+			storage:        localfs.NewPlaintextStorage("/tmp"),
 			gatewayLatency: metrics.NewTimer(),
 			importLatency:  metrics.NewTimer(),
 		}
@@ -54,7 +119,7 @@ func TestPersist(t *testing.T) {
 		expected, err := entity.MarshalJSON()
 		require.Nil(t, err)
 
-		actual, err := ioutil.ReadFile(tmpfile.Name())
+		actual, err := ioutil.ReadFile("/tmp/metrics.json")
 		require.Nil(t, err)
 
 		assert.Equal(t, expected, actual)
@@ -71,10 +136,7 @@ func TestHydrate(t *testing.T) {
 
 	t.Log("happy path")
 	{
-		tmpfile, err := ioutil.TempFile(os.TempDir(), "test_metrics_hydrate")
-
-		require.Nil(t, err)
-		defer os.Remove(tmpfile.Name())
+		defer os.Remove("/tmp/metrics.json")
 
 		old := Metrics{
 			gatewayLatency: metrics.NewTimer(),
@@ -87,10 +149,10 @@ func TestHydrate(t *testing.T) {
 		data, err := old.MarshalJSON()
 		require.Nil(t, err)
 
-		require.Nil(t, ioutil.WriteFile(tmpfile.Name(), data, 0444))
+		require.Nil(t, ioutil.WriteFile("/tmp/metrics.json", data, 0444))
 
 		entity := Metrics{
-			output:         tmpfile.Name(),
+			storage:        localfs.NewPlaintextStorage("/tmp"),
 			gatewayLatency: metrics.NewTimer(),
 			importLatency:  metrics.NewTimer(),
 		}

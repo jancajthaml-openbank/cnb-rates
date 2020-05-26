@@ -63,9 +63,9 @@ func (cnb CNBRatesImport) syncMainRateToday(today time.Time) error {
 	uri := cnb.cnbGateway + utils.GetUrlForDateMainFx(today)
 	response, code, err := cnb.httpClient.Get(uri)
 	if code != 200 && err == nil {
-		return fmt.Errorf("CNB cloud error %d %+v", code, string(response))
+		return fmt.Errorf("Sync Main Rates %+v CNB cloud error %d %+v", today, code, string(response))
 	} else if err != nil {
-		return fmt.Errorf("CNB cloud error %d %+v", code, err)
+		return fmt.Errorf("Sync Main Rates %+v CNB cloud error %d %+v", today, code, err)
 	}
 
 	// FIXME try with backoff until hit
@@ -94,10 +94,10 @@ func (cnb CNBRatesImport) syncOtherRates(day time.Time) error {
 	uri := cnb.cnbGateway + utils.GetUrlForDateOtherFx(day)
 	response, code, err := cnb.httpClient.Get(uri)
 	if code != 200 && err == nil {
-		return fmt.Errorf("CNB cloud error %d %+v", code, string(response))
+		return fmt.Errorf("Sync Other Rates %+v cloud error %d %+v", day, code, string(response))
 	}
 	if err != nil {
-		return fmt.Errorf("CNB cloud error %d %+v", code, err)
+		return fmt.Errorf("Sync Other Rates %+v CNB cloud error %d %+v", day, code, err)
 	}
 
 	if cnb.storage.WriteFile(cachePath, response) != nil {
@@ -148,11 +148,11 @@ func (cnb CNBRatesImport) syncMainRates(days []time.Time) error {
 				uri := cnb.cnbGateway + utils.GetUrlForDateMainFx(date)
 				response, code, err = cnb.httpClient.Get(uri)
 				if code != 200 && err == nil {
-					log.Warnf("CNB cloud error %d %+v", code, string(response))
+					log.Warnf("Sync Main Rates %+v CNB cloud error %d %+v", date, code, string(response))
 					wg.Done()
 					continue
 				} else if err != nil {
-					log.Warnf("CNB cloud error %d %+v", code, err)
+					log.Warnf("Sync Main Rates %+v CNB cloud error %d %+v", date, code, err)
 					wg.Done()
 					continue
 				}
@@ -238,6 +238,9 @@ func (cnb CNBRatesImport) importRoundtrip() {
 
 	months := utils.GetMonthsBetween(fxMainHistoryStart, today)
 	for _, month := range months {
+		if cnb.IsCanceled() {
+			return
+		}
 
 		currentMonth := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, time.UTC)
 		nextMonth := time.Date(month.Year(), month.Month()+1, 0, 0, 0, 0, 0, time.UTC)
@@ -296,6 +299,7 @@ func (cnb CNBRatesImport) Start() {
 	}()
 
 	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
-	<-cnb.IsDone
+
+	cnb.WaitStop()
 	log.Info("Stop cnb-import daemon")
 }

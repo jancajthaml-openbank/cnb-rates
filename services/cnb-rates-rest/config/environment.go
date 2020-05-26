@@ -38,7 +38,7 @@ func loadConfFromEnv() Configuration {
 
 	return Configuration{
 		MetricsRefreshRate: metricsRefreshRate,
-		MetricsOutput:      metricsOutput + "/metrics.json",
+		MetricsOutput:      metricsOutput,
 		RootStorage:        rootStorage,
 		ServerPort:         port,
 		SecretsPath:        secrets,
