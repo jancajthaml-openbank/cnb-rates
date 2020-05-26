@@ -188,6 +188,7 @@ func (batch Batch) Start() {
 	}()
 
 	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
-	<-batch.IsDone
+
+	batch.WaitStop()
 	log.Info("Stop batch-batch daemon")
 }

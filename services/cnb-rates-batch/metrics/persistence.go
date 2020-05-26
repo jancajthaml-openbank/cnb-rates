@@ -15,32 +15,77 @@
 package metrics
 
 import (
+	"bytes"
 	"fmt"
-	"io"
-	"os"
-
 	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
+	"os"
+	"strconv"
 )
+
+// MarshalJSON serialises Metrics as json bytes
+func (metrics *Metrics) MarshalJSON() ([]byte, error) {
+	if metrics == nil {
+		return nil, fmt.Errorf("cannot marshall nil")
+	}
+
+	if metrics.daysProcessed == nil || metrics.monthsProcessed == nil {
+		return nil, fmt.Errorf("cannot marshall nil references")
+	}
+
+	var buffer bytes.Buffer
+
+	buffer.WriteString("{\"daysProcessed\":")
+	buffer.WriteString(strconv.FormatInt(metrics.daysProcessed.Count(), 10))
+	buffer.WriteString(",\"monthsProcessed\":")
+	buffer.WriteString(strconv.FormatInt(metrics.monthsProcessed.Count(), 10))
+	buffer.WriteString("}")
+
+	return buffer.Bytes(), nil
+}
+
+// UnmarshalJSON deserializes Metrics from json bytes
+func (metrics *Metrics) UnmarshalJSON(data []byte) error {
+	if metrics == nil {
+		return fmt.Errorf("cannot unmarshall to nil")
+	}
+
+	if metrics.daysProcessed == nil || metrics.monthsProcessed == nil {
+		return fmt.Errorf("cannot unmarshall to nil references")
+	}
+
+	aux := &struct {
+		DaysProcessed   int64 `json:"daysProcessed"`
+		MonthsProcessed int64 `json:"monthsProcessed"`
+	}{}
+
+	if err := utils.JSON.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	metrics.daysProcessed.Clear()
+	metrics.daysProcessed.Inc(aux.DaysProcessed)
+
+	metrics.monthsProcessed.Clear()
+	metrics.monthsProcessed.Inc(aux.MonthsProcessed)
+
+	return nil
+}
 
 // Persist saved metrics state to storage
 func (metrics *Metrics) Persist() error {
 	if metrics == nil {
 		return fmt.Errorf("cannot persist nil reference")
 	}
-	tempFile := metrics.output + "_temp"
 	data, err := utils.JSON.Marshal(metrics)
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(tempFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	err = metrics.storage.WriteFile("metrics.batch.json", data)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	if _, err := f.Write(data); err != nil {
-		return err
-	}
-	if err := os.Rename(tempFile, metrics.output); err != nil {
+	err = os.Chmod(metrics.storage.Root+"/metrics.batch.json", 0644)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -51,24 +96,11 @@ func (metrics *Metrics) Hydrate() error {
 	if metrics == nil {
 		return fmt.Errorf("cannot hydrate nil reference")
 	}
-	fi, err := os.Stat(metrics.output)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-	f, err := os.OpenFile(metrics.output, os.O_RDONLY, 0444)
+	data, err := metrics.storage.ReadFileFully("metrics.batch.json")
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	buf := make([]byte, fi.Size())
-	_, err = f.Read(buf)
-	if err != nil && err != io.EOF {
-		return err
-	}
-	err = utils.JSON.Unmarshal(buf, metrics)
+	err = utils.JSON.Unmarshal(data, metrics)
 	if err != nil {
 		return err
 	}

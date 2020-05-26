@@ -30,8 +30,7 @@ import (
 type Program struct {
 	interrupt chan os.Signal
 	cfg       config.Configuration
-	metrics   metrics.Metrics
-	batch     batch.Batch
+	daemons   []utils.Daemon
 	cancel    context.CancelFunc
 }
 
@@ -44,15 +43,18 @@ func Initialize() Program {
 	utils.SetupLogger(cfg.LogLevel)
 
 	storage := localfs.NewPlaintextStorage(cfg.RootStorage)
-	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
 
+	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
 	batchDaemon := batch.NewBatch(ctx, &metricsDaemon, &storage)
+
+	var daemons = make([]utils.Daemon, 0)
+	daemons = append(daemons, metricsDaemon)
+	daemons = append(daemons, batchDaemon)
 
 	return Program{
 		interrupt: make(chan os.Signal, 1),
 		cfg:       cfg,
-		metrics:   metricsDaemon,
-		batch:     batchDaemon,
+		daemons:   daemons,
 		cancel:    cancel,
 	}
 }

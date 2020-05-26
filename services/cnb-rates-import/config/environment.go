@@ -50,7 +50,7 @@ func loadConfFromEnv() Configuration {
 		CNBGateway:         cnbGateway,
 		LogLevel:           logLevel,
 		MetricsRefreshRate: metricsRefreshRate,
-		MetricsOutput:      metricsOutput + "/metrics.import.json",
+		MetricsOutput:      metricsOutput,
 	}
 }
 
