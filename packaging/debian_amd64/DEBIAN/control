@@ -1,5 +1,5 @@
 Package: cnb-rates
-Version: 1.0.3+cleanup-code
+Version: 1.0.3+improve-bbtests
 Section: misc
 Priority: extra
 Architecture: amd64

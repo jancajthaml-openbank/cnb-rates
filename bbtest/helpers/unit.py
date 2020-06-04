@@ -121,12 +121,14 @@ class UnitHelper(object):
     result = [item for item in result if ("cnb-rates" in item)]
 
     for unit in result:
+      service = unit.split('.service')[0].split('@')[0]
       (code, result, error) = execute([
-        'journalctl', '-o', 'short-precise', '-t', unit, '--no-pager'
+        'journalctl', '-o', 'short-precise', '-t', service, '-u', unit, '--no-pager'
       ])
-      if code == 0:
-        with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as f:
-          f.write(result)
+      if code != 0:
+        continue
+      with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as f:
+        f.write(result)
 
   def teardown(self):
     (code, result, error) = execute([
