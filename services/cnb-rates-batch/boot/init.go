@@ -45,8 +45,16 @@ func Initialize() Program {
 
 	storage := localfs.NewPlaintextStorage(cfg.RootStorage)
 
-	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
-	batchDaemon := batch.NewBatch(ctx, &metricsDaemon, &storage)
+	metricsDaemon := metrics.NewMetrics(
+		ctx,
+		cfg.MetricsOutput,
+		cfg.MetricsRefreshRate,
+	)
+	batchDaemon := batch.NewBatch(
+		ctx,
+		&metricsDaemon,
+		&storage,
+	)
 
 	var daemons = make([]utils.Daemon, 0)
 	daemons = append(daemons, metricsDaemon)
