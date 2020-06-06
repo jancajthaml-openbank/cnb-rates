@@ -43,10 +43,20 @@ func Initialize() Program {
 
 	logging.SetupLogger(cfg.LogLevel)
 
-	storage := localfs.NewPlaintextStorage(cfg.RootStorage)
-
-	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
-	cnbDaemon := integration.NewCNBRatesImport(ctx, cfg, &metricsDaemon, &storage)
+	storage := localfs.NewPlaintextStorage(
+		cfg.RootStorage,
+	)
+	metricsDaemon := metrics.NewMetrics(
+		ctx,
+		cfg.MetricsOutput,
+		cfg.MetricsRefreshRate,
+	)
+	cnbDaemon := integration.NewCNBRatesImport(
+		ctx,
+		cfg,
+		&metricsDaemon,
+		&storage,
+	)
 
 	var daemons = make([]utils.Daemon, 0)
 	daemons = append(daemons, metricsDaemon)

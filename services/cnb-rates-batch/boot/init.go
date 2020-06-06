@@ -43,8 +43,9 @@ func Initialize() Program {
 
 	logging.SetupLogger(cfg.LogLevel)
 
-	storage := localfs.NewPlaintextStorage(cfg.RootStorage)
-
+	storage := localfs.NewPlaintextStorage(
+		cfg.RootStorage,
+	)
 	metricsDaemon := metrics.NewMetrics(
 		ctx,
 		cfg.MetricsOutput,

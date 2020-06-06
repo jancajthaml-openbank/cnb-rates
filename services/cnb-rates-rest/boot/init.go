@@ -43,10 +43,20 @@ func Initialize() Program {
 
 	logging.SetupLogger(cfg.LogLevel)
 
-	storage := localfs.NewPlaintextStorage(cfg.RootStorage)
-
-	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
-	restDaemon := api.NewServer(ctx, cfg.ServerPort, cfg.SecretsPath, &storage)
+	storage := localfs.NewPlaintextStorage(
+		cfg.RootStorage,
+	)
+	metricsDaemon := metrics.NewMetrics(
+		ctx,
+		cfg.MetricsOutput,
+		cfg.MetricsRefreshRate,
+	)
+	restDaemon := api.NewServer(
+		ctx,
+		cfg.ServerPort,
+		cfg.SecretsPath,
+		&storage,
+	)
 
 	var daemons = make([]utils.Daemon, 0)
 	daemons = append(daemons, metricsDaemon)
