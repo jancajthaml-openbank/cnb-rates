@@ -22,6 +22,7 @@ import (
 	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/logging"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 )
@@ -40,12 +41,21 @@ func Initialize() Program {
 
 	cfg := config.GetConfig()
 
-	utils.SetupLogger(cfg.LogLevel)
+	logging.SetupLogger(cfg.LogLevel)
 
-	storage := localfs.NewPlaintextStorage(cfg.RootStorage)
-
-	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
-	batchDaemon := batch.NewBatch(ctx, &metricsDaemon, &storage)
+	storage := localfs.NewPlaintextStorage(
+		cfg.RootStorage,
+	)
+	metricsDaemon := metrics.NewMetrics(
+		ctx,
+		cfg.MetricsOutput,
+		cfg.MetricsRefreshRate,
+	)
+	batchDaemon := batch.NewBatch(
+		ctx,
+		&metricsDaemon,
+		&storage,
+	)
 
 	var daemons = make([]utils.Daemon, 0)
 	daemons = append(daemons, metricsDaemon)

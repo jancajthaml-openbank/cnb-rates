@@ -22,6 +22,7 @@ import (
 	"github.com/jancajthaml-openbank/cnb-rates-rest/config"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-rest/logging"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 )
@@ -40,12 +41,22 @@ func Initialize() Program {
 
 	cfg := config.GetConfig()
 
-	utils.SetupLogger(cfg.LogLevel)
+	logging.SetupLogger(cfg.LogLevel)
 
-	storage := localfs.NewPlaintextStorage(cfg.RootStorage)
-
-	metricsDaemon := metrics.NewMetrics(ctx, cfg.MetricsOutput, cfg.MetricsRefreshRate)
-	restDaemon := api.NewServer(ctx, cfg.ServerPort, cfg.SecretsPath, &storage)
+	storage := localfs.NewPlaintextStorage(
+		cfg.RootStorage,
+	)
+	metricsDaemon := metrics.NewMetrics(
+		ctx,
+		cfg.MetricsOutput,
+		cfg.MetricsRefreshRate,
+	)
+	restDaemon := api.NewServer(
+		ctx,
+		cfg.ServerPort,
+		cfg.SecretsPath,
+		&storage,
+	)
 
 	var daemons = make([]utils.Daemon, 0)
 	daemons = append(daemons, metricsDaemon)
