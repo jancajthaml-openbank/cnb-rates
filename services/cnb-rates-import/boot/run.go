@@ -22,8 +22,6 @@ import (
 	"time"
 
 	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // WaitReady wait for daemons to be ready

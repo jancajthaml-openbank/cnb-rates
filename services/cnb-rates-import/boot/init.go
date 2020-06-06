@@ -22,6 +22,7 @@ import (
 	"github.com/jancajthaml-openbank/cnb-rates-import/integration"
 	"github.com/jancajthaml-openbank/cnb-rates-import/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-import/logging"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 )
@@ -40,7 +41,7 @@ func Initialize() Program {
 
 	cfg := config.GetConfig()
 
-	utils.SetupLogger(cfg.LogLevel)
+	logging.SetupLogger(cfg.LogLevel)
 
 	storage := localfs.NewPlaintextStorage(cfg.RootStorage)
 

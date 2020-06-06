@@ -25,7 +25,6 @@ import (
 	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
-	log "github.com/sirupsen/logrus"
 )
 
 // Batch represents batch subroutine

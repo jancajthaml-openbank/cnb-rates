@@ -22,8 +22,6 @@ import (
 	"time"
 
 	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func loadConfFromEnv() Configuration {

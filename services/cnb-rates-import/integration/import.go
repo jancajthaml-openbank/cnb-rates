@@ -29,7 +29,6 @@ import (
 	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
-	log "github.com/sirupsen/logrus"
 )
 
 // CNBRatesImport represents cnb gateway rates import subroutine
