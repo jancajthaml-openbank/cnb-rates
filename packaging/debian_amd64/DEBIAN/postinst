@@ -2,12 +2,6 @@
 
 set -e
 
-if [ "$(ps -o comm -p 1 --no-headers | tr -d ' ')" = "systemd" ] ; then
-  SYSTEMD_AVAIL=true
-else
-  SYSTEMD_AVAIL=false
-fi
-
 enable() {
   wanted_by=$(cat /lib/systemd/system/${1} | sed -n -e 's/^.*WantedBy=//p')
   mkdir -p /etc/systemd/system/${wanted_by}.wants
@@ -24,14 +18,11 @@ case "$1" in
       enable cnb-rates.service
       enable cnb-rates-rest.service
       enable cnb-rates-import.timer
-
-      if [ ${SYSTEMD_AVAIL} ] ; then
-        systemctl daemon-reload
-        systemctl start cnb-rates.service
-        systemctl start cnb-rates.path
-        systemctl start cnb-rates-import.timer
-      fi
-
+      (systemctl daemon-reload >/dev/null 2>&1 || :)
+      (systemctl start cnb-rates.service >/dev/null 2>&1 || :)
+      (systemctl start cnb-rates-import.timer >/dev/null 2>&1 || :)
+      (systemctl start cnb-rates-rest.service >/dev/null 2>&1 || :)
+      (systemctl start cnb-rates.path >/dev/null 2>&1 || :)
     else
       (>&2 echo "/etc/init/cnb-rates.conf file not found")
       exit 1

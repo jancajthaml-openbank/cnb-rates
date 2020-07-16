@@ -75,6 +75,7 @@ bbtest:
 	@(docker rm -f $$(docker ps -a --filter="name=cnb_rates_bbtest_amd64" -q) &> /dev/null || :)
 	@docker exec -t $$(\
 		docker run -d \
+			--cpuset-cpus=1 \
 			--name=cnb_rates_bbtest_amd64 \
 			--cap-add=SYS_TIME \
 			-e IMAGE_VERSION="$(VERSION)-$(META)" \
