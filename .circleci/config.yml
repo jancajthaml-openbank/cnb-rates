@@ -573,7 +573,6 @@ jobs:
             docker exec -it $(\
               docker run -d -t \
                 --cpuset-cpus=1 \
-                --cap-add=SYS_TIME \
                 -e IMAGE_VERSION="${IMAGE_VERSION}" \
                 -e UNIT_VERSION="${UNIT_VERSION}" \
                 -e UNIT_ARCH=amd64 \
