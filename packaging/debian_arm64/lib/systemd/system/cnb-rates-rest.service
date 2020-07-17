@@ -20,4 +20,4 @@ TimeoutSec=infinity
 KillMode=process
 
 [Install]
-WantedBy=cnb-rates.service
+WantedBy=multi-user.target

@@ -12,12 +12,12 @@ def timeshift(context, value):
   (code, result, error) = execute([
     'timedatectl', 'set-ntp', '0'
   ])
-  assert code == 0, "{}{}".format(result, error)
+  assert code == 0, "timedatectl set-ntp 0 failed with: {} {}".format(result, error)
 
   (code, result, error) = execute([
     'timedatectl', 'set-local-rtc', '0'
   ])
-  assert code == 0, "{}{}".format(result, error)
+  assert code == 0, "timedatectl set-local-rtc 0 failed with: {} {}".format(result, error)
 
   context.timeshift = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z').astimezone(datetime.timezone.utc)
 
@@ -25,7 +25,7 @@ def timeshift(context, value):
     (code, result, error) = execute([
       'timedatectl', 'set-time', context.timeshift.strftime('%Y-%m-%d %H:%M:%S')
     ])
-    assert code == 0, "{}{}".format(result, error)
+    assert code == 0, "timedatectl set-time failed with: {} {}".format(result, error)
 
     context.timeshift += datetime.timedelta(seconds=1)
     time.sleep(1)
@@ -72,7 +72,7 @@ def step_impl(context):
   result = [item.split(' ')[0].strip() for item in result.split('\n')]
   result = [item for item in result if item in items]
 
-  assert len(result) > 0
+  assert len(result) > 0, 'units not found'
 
 
 @given('systemctl does not contain following active units')
@@ -90,7 +90,7 @@ def step_impl(context):
   result = [item.split(' ')[0].strip() for item in result.split('\n')]
   result = [item for item in result if item in items]
 
-  assert len(result) == 0
+  assert len(result) == 0, 'units found'
 
 
 @given('unit "{unit}" is running')
