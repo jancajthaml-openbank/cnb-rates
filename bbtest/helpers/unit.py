@@ -109,8 +109,8 @@ class UnitHelper(object):
     if params:
       options.update(params)
 
-    os.makedirs("/etc/init", exist_ok=True)
-    with open('/etc/init/cnb-rates.conf', 'w') as fd:
+    os.makedirs("/etc/cnb-rates/conf.d", exist_ok=True)
+    with open('/etc/cnb-rates/conf.d/init.conf', 'w') as fd:
       for k, v in sorted(options.items()):
         fd.write('CNB_RATES_{}={}\n'.format(k, v))
 
@@ -122,9 +122,8 @@ class UnitHelper(object):
     result = [item for item in result if ("cnb-rates" in item)]
 
     for unit in result:
-      service = unit.split('.service')[0].split('@')[0]
       (code, result, error) = execute([
-        'journalctl', '-o', 'cat', '-t', service, '-u', unit, '--no-pager'
+        'journalctl', '-o', 'cat', '-u', unit, '--no-pager'
       ])
       if code != 0 or not result:
         continue

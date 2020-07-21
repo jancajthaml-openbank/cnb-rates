@@ -8,6 +8,7 @@ services:
 
   go:
     image: jancajthaml/go
+    tty: true
     volumes:
       - .:/project
       - ./services/cnb-rates-import:/go/src/github.com/jancajthaml-openbank/cnb-rates-import
@@ -20,7 +21,6 @@ services:
       - GOPATH=/go
       - COMPOSE_PROJECT_NAME
     entrypoint: ["go"]
-    privileged: true
 
   # -------------------------------------------------------------------------- #
 

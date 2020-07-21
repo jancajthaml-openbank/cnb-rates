@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os
 from helpers.unit import UnitHelper
 from mocks.cnb.server import CNBMock
@@ -10,7 +13,6 @@ def after_feature(context, feature):
 def before_all(context):
   context.unit = UnitHelper(context)
   context.cnb = CNBMock(context)
-  os.system('rm -rf /tmp/reports/blackbox-tests/logs/*.log /tmp/reports/blackbox-tests/metrics/*.json')
   context.cnb.start()
   context.unit.download()
   context.unit.configure()
@@ -19,3 +21,5 @@ def before_all(context):
 def after_all(context):
   context.cnb.stop()
   context.unit.teardown()
+  if os.path.isdir('/data'):
+    os.system('cp -r /data/* /tmp/reports/blackbox-tests/data/')

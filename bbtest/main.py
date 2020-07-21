@@ -18,7 +18,7 @@ if __name__ == "__main__":
     '-o /tmp/reports/blackbox-tests/behave/results.json',
   ]
 
-  if sys.stdout.isatty() and (int(os.environ.get('NO_TTY', 0)) == 0):
+  if sys.stdout.isatty() and (int(os.environ.get('CI', 0)) == 0):
     args.append('-f pretty')
   else:
     args.append('-f progress3')
@@ -34,6 +34,7 @@ if __name__ == "__main__":
     '/tmp/reports/blackbox-tests/cucumber'
   ]:
     os.system('mkdir -p {}'.format(path))
+    os.system('rm -rf {}/*'.format(path))
 
   from behave import __main__ as behave_executable
   exit_code = behave_executable.main(args=' '.join(args))

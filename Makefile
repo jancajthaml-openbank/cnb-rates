@@ -15,8 +15,7 @@ all: bootstrap sync test package bbtest
 
 .PHONY: package
 package:
-	@$(MAKE) bundle-binaries-amd64
-	@$(MAKE) bundle-debian-amd64
+	@$(MAKE) package-amd64
 	@$(MAKE) bundle-docker
 
 .PHONY: package-%
@@ -32,7 +31,7 @@ bundle-binaries-%: %
 
 .PHONY: bundle-debian-%
 bundle-debian-%: %
-	@docker-compose run --rm debian --version $(VERSION)+$(META) --arch $^ --source /project/packaging
+	@docker-compose run --rm debian --version $(VERSION)+$(META) --arch $^ --pkg cnb-rates --source /project/packaging
 
 .PHONY: bundle-docker
 bundle-docker:
@@ -79,7 +78,7 @@ bbtest:
 			--name=cnb_rates_bbtest_amd64 \
 			--cap-add=SYS_TIME \
 			-e IMAGE_VERSION="$(VERSION)-$(META)" \
-			-e UNIT_VERSION="$(VERSION)+$(META)" \
+			-e UNIT_VERSION="$(VERSION)" \
 			-e UNIT_ARCH=amd64 \
 			-v /var/run/docker.sock:/var/run/docker.sock:rw \
 			-v /var/lib/docker/containers:/var/lib/docker/containers:rw \

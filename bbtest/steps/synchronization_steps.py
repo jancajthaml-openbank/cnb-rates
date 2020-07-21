@@ -1,3 +1,4 @@
+
 from behave import *
 from helpers.shell import execute
 from helpers.eventually import eventually
@@ -18,11 +19,11 @@ def step_impl(context):
     from_datetime += datetime.timedelta(days=1)
 
   @eventually(10)
-  def impl():
+  def wait_for_files():
     for day in days:
       day_file = '/data/rates/cnb/raw/fx-main/{}'.format(day.strftime('%d.%m.%Y'))
       assert os.path.isfile(day_file), 'file {} not found'.format(day_file)
-  impl()
+  wait_for_files()
 
 
 @then('all fx-main CNB data are processed')
@@ -37,8 +38,8 @@ def step_impl(context):
     from_datetime += datetime.timedelta(days=1)
 
   @eventually(10)
-  def impl():
+  def wait_for_files():
     for day in days:
       day_file = '/data/rates/cnb/processed/fx-main/d/{}'.format(day.strftime('%d.%m.%Y'))
       assert os.path.isfile(day_file), 'file {} not found'.format(day_file)
-  impl()
+  wait_for_files()

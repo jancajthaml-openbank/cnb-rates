@@ -1,0 +1,4 @@
+bin/cnb-rates-rest-linux-arm64 usr/bin
+bin/cnb-rates-import-linux-arm64 usr/bin
+bin/cnb-rates-batch-linux-arm64 usr/bin
+init.conf etc/cnb-rates/conf.d

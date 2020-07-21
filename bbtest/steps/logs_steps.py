@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from behave import *
 from helpers.shell import execute
 from helpers.eventually import eventually
@@ -9,9 +12,8 @@ def step_impl(context, unit):
 
   @eventually(5)
   def impl():
-    service = unit.split('.service')[0].split('@')[0]
     (code, result, error) = execute([
-      'journalctl', '-o', 'cat', '-t', service, '-u', unit, '--no-pager'
+      'journalctl', '-o', 'cat', '-u', unit, '--no-pager'
     ])
 
     assert code == 0
@@ -35,6 +37,6 @@ def step_impl(context, unit):
           found = True
           break
 
-      assert found == True
+      assert found == True, '{} not found in {}'.format(expected_lines, actual_lines_merged)
 
   impl()

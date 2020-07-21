@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from behave import *
 from helpers.shell import execute
 import os
@@ -7,8 +10,6 @@ import datetime
 
 @given('current time is "{value}"')
 def timeshift(context, value):
-  import time
-
   (code, result, error) = execute([
     'timedatectl', 'set-ntp', '0'
   ])
@@ -21,37 +22,57 @@ def timeshift(context, value):
 
   context.timeshift = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z').astimezone(datetime.timezone.utc)
 
-  for _ in range(4):
+  @eventually(10)
+  def wait_for_import_to_start():
     (code, result, error) = execute([
       'timedatectl', 'set-time', context.timeshift.strftime('%Y-%m-%d %H:%M:%S')
     ])
     assert code == 0, "timedatectl set-time failed with: {} {}".format(result, error)
 
     context.timeshift += datetime.timedelta(seconds=1)
-    time.sleep(1)
+
+    (code, result, error) = execute([
+      "systemctl", "restart", "cnb-rates-import.timer"
+    ])
+    assert code == 0, str(result) + ' ' + str(error)
 
     (code, result, error) = execute([
       "systemctl", "show", "-p", "SubState", 'cnb-rates-import.service'
     ])
-    if 'SubState=running' in result:
-      break
+    assert code == 0, str(result) + ' ' + str(error)
+    assert 'SubState=running' in result, str(result) + ' ' + str(error)
+
+  @eventually(10)
+  def wait_for_import_to_stop():
+    (code, result, error) = execute([
+      "systemctl", "stop", "cnb-rates-import.service"
+    ])
+    assert code == 0, str(result) + ' ' + str(error)
+
+    (code, result, error) = execute([
+      "systemctl", "show", "-p", "SubState", 'cnb-rates-import.service'
+    ])
+    assert code == 0, str(result) + ' ' + str(error)
+    assert 'SubState=dead' in result, str(result) + ' ' + str(error)
+
+  wait_for_import_to_start()
+  wait_for_import_to_stop()
 
 
 @given('package {package} is {operation}')
 def step_impl(context, package, operation):
   if operation == 'installed':
     (code, result, error) = execute([
-      "apt-get", "-y", "install", "-f", "/tmp/packages/{}.deb".format(package)
+      "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", "/tmp/packages/{}.deb".format(package)
     ])
-    assert code == 0
-    assert os.path.isfile('/etc/init/cnb-rates.conf') is True
-
+    assert code == 0, "unable to install with code {} and {} {}".format(code, result, error)
+    assert os.path.isfile('/etc/cnb-rates/conf.d/init.conf') is True
   elif operation == 'uninstalled':
     (code, result, error) = execute([
       "apt-get", "-y", "remove", package
     ])
-    assert code == 0
-    assert os.path.isfile('/etc/init/cnb-rates.conf') is False
+    assert code == 0, "unable to uninstall with code {} and {} {}".format(code, result, error)
+    assert os.path.isfile('/etc/cnb-rates/conf.d/init.conf') is False
 
   else:
     assert False
@@ -124,7 +145,7 @@ def operation_unit(context, operation, unit):
   (code, result, error) = execute([
     "systemctl", operation, unit
   ])
-  assert code == 0
+  assert code == 0, str(result) + ' ' + str(error)
 
   if operation == 'restart':
     unit_running(context, unit)
