@@ -401,7 +401,7 @@ jobs:
             VERSION=$(cat /home/circleci/project/TAG_VERSION)
             /home/circleci/project/dev/lifecycle/debian \
               --arch amd64 \
-              ---pkg cnb-rates \
+              --pkg cnb-rates \
               --version ${VERSION} \
               --source /home/circleci/project/packaging
           no_output_timeout: 5m
