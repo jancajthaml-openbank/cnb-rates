@@ -39,7 +39,7 @@ class UnitHelper(object):
     self.store = dict()
     self.image_version = None
     self.debian_version = None
-    self.units = dict()
+    self.units = list()
     self.docker = docker.APIClient(base_url='unix://var/run/docker.sock')
     self.context = context
 
