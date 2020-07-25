@@ -26,6 +26,6 @@ def after_all(context):
   context.cnb.stop()
   execute(['timedatectl', 'set-ntp', '1'])
   execute(['timedatectl', 'set-local-rtc', '1'])
-  time.sleep(1)
+  time.sleep(2)
 
 
