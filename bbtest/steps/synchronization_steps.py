@@ -20,7 +20,7 @@ def step_impl(context):
       days.append(from_datetime)
     from_datetime += datetime.timedelta(days=1)
 
-  @eventually(10)
+  @eventually(20)
   def wait_for_files():
     for day in days:
       day_file = '/data/rates/cnb/raw/fx-main/{}'.format(day.strftime('%d.%m.%Y'))
@@ -39,7 +39,7 @@ def step_impl(context):
       days.append(from_datetime)
     from_datetime += datetime.timedelta(days=1)
 
-  @eventually(10)
+  @eventually(20)
   def wait_for_files():
     for day in days:
       day_file = '/data/rates/cnb/processed/fx-main/d/{}'.format(day.strftime('%d.%m.%Y'))
