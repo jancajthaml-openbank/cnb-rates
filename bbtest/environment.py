@@ -19,5 +19,5 @@ def before_all(context):
 
 
 def after_all(context):
-  context.cnb.stop()
   context.unit.teardown()
+  context.cnb.stop()
