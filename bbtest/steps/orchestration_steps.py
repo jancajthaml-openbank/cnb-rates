@@ -10,16 +10,6 @@ import datetime
 
 @given('current time is "{value}"')
 def timeshift(context, value):
-  (code, result, error) = execute([
-    'timedatectl', 'set-ntp', '0'
-  ])
-  assert code == 0, "timedatectl set-ntp 0 failed with: {} {}".format(result, error)
-
-  (code, result, error) = execute([
-    'timedatectl', 'set-local-rtc', '0'
-  ])
-  assert code == 0, "timedatectl set-local-rtc 0 failed with: {} {}".format(result, error)
-
   context.timeshift = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z').astimezone(datetime.timezone.utc)
 
   @eventually(10)
