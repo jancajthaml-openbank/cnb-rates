@@ -19,13 +19,14 @@ def before_all(context):
   context.unit.download()
   execute(['timedatectl', 'set-ntp', '0'])
   execute(['timedatectl', 'set-local-rtc', '0'])
+  execute(['systemctl', 'restart', 'systemd-timedated'])
 
 
 def after_all(context):
   context.unit.teardown()
   context.cnb.stop()
-  execute(['timedatectl', 'set-ntp', '1'])
+
   execute(['timedatectl', 'set-local-rtc', '1'])
-  time.sleep(2)
-
-
+  execute(['timedatectl', 'set-ntp', '1'])
+  execute(['systemctl', 'restart', 'systemd-timedated'])
+  execute(['systemctl', 'restart', 'systemd-timesyncd'])
