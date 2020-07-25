@@ -1,0 +1,12 @@
+Source: cnb-rates
+Maintainer: Jan Cajthaml <jan.cajthaml@gmail.com>
+Section: misc
+Priority: optional
+Build-Depends: debhelper (>= 10)
+Standards-Version: 4.1.4
+
+Package: cnb-rates
+Architecture: any
+Description: cnb rates offline mirror
+ Service providing access and api for Czech National Bank exchange rates
+Depends: openssl (>= 1.1~), ${shlibs:Depends}

@@ -1,5 +1,7 @@
-from behave import *
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
+from behave import *
 import os
 import stat
 import json
@@ -40,15 +42,15 @@ def step_impl(context, path):
 def step_impl(context, path):
   file_should_exist(context, path)
 
-  actual = dict()
-  with open(path, 'r') as fd:
-    actual.update(json.loads(fd.read()))
-
-  @eventually(3)
+  @eventually(5)
   def wait_for_metrics_update():
+    actual = dict()
+    with open(path, 'r') as fd:
+      actual.update(json.loads(fd.read()))
+
     for row in context.table:
-      assert row['key'] in actual
-      assert str(actual[row['key']]) == row['value']
+      assert row['key'] in actual, 'key {} not found in metrics'.format(row['key'])
+      assert str(actual[row['key']]) == row['value'], 'metrics {} value mismatch expected {} actual {}'.format(row['key'], row['value'], str(actual[row['key']]))
 
   wait_for_metrics_update()
 
