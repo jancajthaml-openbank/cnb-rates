@@ -14,34 +14,21 @@ def timeshift(context, value):
 
   @eventually(10)
   def wait_for_import_to_start():
-    (code, result, error) = execute([
-      'timedatectl', 'set-time', context.timeshift.strftime('%Y-%m-%d %H:%M:%S')
-    ])
+    (code, result, error) = execute(['timedatectl', 'set-time', context.timeshift.strftime('%Y-%m-%d %H:%M:%S')])
     assert code == 0, "timedatectl set-time failed with: {} {}".format(result, error)
-
     context.timeshift += datetime.timedelta(seconds=1)
-
-    (code, result, error) = execute([
-      "systemctl", "restart", "cnb-rates-import.timer"
-    ])
+    (code, result, error) = execute(["systemctl", "restart", "cnb-rates-import.timer"])
     assert code == 0, str(result) + ' ' + str(error)
-
-    (code, result, error) = execute([
-      "systemctl", "show", "-p", "SubState", 'cnb-rates-import.service'
-    ])
+    (code, result, error) = execute(["systemctl", "show", "-p", "SubState", 'cnb-rates-import.service'])
     assert code == 0, str(result) + ' ' + str(error)
     assert 'SubState=running' in result, str(result) + ' ' + str(error)
 
   @eventually(10)
   def wait_for_import_to_stop():
-    (code, result, error) = execute([
-      "systemctl", "stop", "cnb-rates-import.service"
-    ])
+    (code, result, error) = execute(["systemctl", "stop", "cnb-rates-import.service"])
     assert code == 0, str(result) + ' ' + str(error)
 
-    (code, result, error) = execute([
-      "systemctl", "show", "-p", "SubState", 'cnb-rates-import.service'
-    ])
+    (code, result, error) = execute(["systemctl", "show", "-p", "SubState", 'cnb-rates-import.service'])
     assert code == 0, str(result) + ' ' + str(error)
     assert 'SubState=dead' in result, str(result) + ' ' + str(error)
 
