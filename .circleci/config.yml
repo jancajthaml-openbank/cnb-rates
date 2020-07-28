@@ -386,7 +386,7 @@ jobs:
 
   debian-amd64:
     docker:
-      - image: jancajthaml/go:latest
+      - image: jancajthaml/debian-packager:latest
     working_directory: /home/circleci/project
     steps:
       - restore_cache:
@@ -414,7 +414,7 @@ jobs:
 
   debian-armhf:
     docker:
-      - image: jancajthaml/go:latest
+      - image: jancajthaml/debian-packager:latest
     working_directory: /home/circleci/project
     steps:
       - setup_remote_docker:
@@ -444,7 +444,7 @@ jobs:
 
   debian-arm64:
     docker:
-      - image: jancajthaml/go:latest
+      - image: jancajthaml/debian-packager:latest
     working_directory: /home/circleci/project
     steps:
       - setup_remote_docker:
@@ -598,7 +598,7 @@ jobs:
 
   release:
     docker:
-      - image: jancajthaml/go:latest
+      - image: jancajthaml/debian-packager:latest
     working_directory: /home/circleci/project
     steps:
       - restore_cache:
