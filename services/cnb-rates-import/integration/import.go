@@ -62,9 +62,9 @@ func (cnb CNBRatesImport) syncMainRateToday(today time.Time) error {
 	uri := cnb.cnbGateway + utils.GetUrlForDateMainFx(today)
 	response, code, err := cnb.httpClient.Get(uri)
 	if code != 200 && err == nil {
-		return fmt.Errorf("Sync Main Rates %+v CNB cloud error %d %+v", today, code, string(response))
+		return fmt.Errorf("sync Main Rates %+v CNB cloud error %d %+v", today, code, string(response))
 	} else if err != nil {
-		return fmt.Errorf("Sync Main Rates %+v CNB cloud error %d %+v", today, code, err)
+		return fmt.Errorf("sync Main Rates %+v CNB cloud error %d %+v", today, code, err)
 	}
 
 	// FIXME try with backoff until hit
@@ -93,10 +93,10 @@ func (cnb CNBRatesImport) syncOtherRates(day time.Time) error {
 	uri := cnb.cnbGateway + utils.GetUrlForDateOtherFx(day)
 	response, code, err := cnb.httpClient.Get(uri)
 	if code != 200 && err == nil {
-		return fmt.Errorf("Sync Other Rates %+v cloud error %d %+v", day, code, string(response))
+		return fmt.Errorf("sync Other Rates %+v cloud error %d %+v", day, code, string(response))
 	}
 	if err != nil {
-		return fmt.Errorf("Sync Other Rates %+v CNB cloud error %d %+v", day, code, err)
+		return fmt.Errorf("sync Other Rates %+v CNB cloud error %d %+v", day, code, err)
 	}
 
 	if cnb.storage.WriteFile(cachePath, response) != nil {
@@ -147,11 +147,11 @@ func (cnb CNBRatesImport) syncMainRates(days []time.Time) error {
 				uri := cnb.cnbGateway + utils.GetUrlForDateMainFx(date)
 				response, code, err = cnb.httpClient.Get(uri)
 				if code != 200 && err == nil {
-					log.Warnf("Sync Main Rates %+v CNB cloud error %d %+v", date, code, string(response))
+					log.Warnf("sync Main Rates %+v CNB cloud error %d %+v", date, code, string(response))
 					wg.Done()
 					continue
 				} else if err != nil {
-					log.Warnf("Sync Main Rates %+v CNB cloud error %d %+v", date, code, err)
+					log.Warnf("sync Main Rates %+v CNB cloud error %d %+v", date, code, err)
 					wg.Done()
 					continue
 				}
@@ -260,7 +260,7 @@ func (cnb CNBRatesImport) importRoundtrip() {
 			lastDay := days[len(days)-1]
 
 			log.Debugf("Synchonizing other fx rates for %s", lastDay.Format("02.01.2006"))
-			// FIXME must be last day of `currentMonth` for ther fx fates
+			// FIXME must be last day of `currentMonth` for there fx fates
 			if err := cnb.syncOtherRates(lastDay); err != nil {
 				log.Warnf(err.Error())
 			}

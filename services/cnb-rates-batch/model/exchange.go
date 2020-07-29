@@ -59,7 +59,7 @@ func (entity *Exchange) UnmarshalText(data []string) error {
 	return nil
 }
 
-// MarshalJSON serialises ExchangeFixing as json
+// MarshalJSON serializes ExchangeFixing as json
 func (entity ExchangeFixing) MarshalJSON() ([]byte, error) {
 	pivot := len(entity.Rates) - 1
 	var buffer bytes.Buffer

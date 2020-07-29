@@ -20,9 +20,9 @@ import (
 
 	"github.com/jancajthaml-openbank/cnb-rates-batch/batch"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/logging"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
-	"github.com/jancajthaml-openbank/cnb-rates-batch/logging"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 )

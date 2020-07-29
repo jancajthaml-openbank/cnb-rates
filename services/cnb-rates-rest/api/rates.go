@@ -53,7 +53,7 @@ func RatesPartial(server *Server) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetTokens retruns list of existing tokens
+// GetRates returns rates for given currency
 func GetRates(server *Server, currency string, w http.ResponseWriter, r *http.Request) {
 	tokens, err := persistence.LoadRates(server.Storage, currency)
 	if err != nil {

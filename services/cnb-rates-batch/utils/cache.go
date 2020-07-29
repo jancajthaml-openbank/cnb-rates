@@ -15,10 +15,10 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/csv"
 	"fmt"
 	"io"
-	"bytes"
 	"strings"
 	"time"
 

@@ -18,8 +18,8 @@ import (
 	"context"
 	"time"
 
-	localfs "github.com/jancajthaml-openbank/local-fs"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
+	localfs "github.com/jancajthaml-openbank/local-fs"
 	metrics "github.com/rcrowley/go-metrics"
 )
 

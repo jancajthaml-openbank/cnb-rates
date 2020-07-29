@@ -20,7 +20,7 @@ type Token struct {
 	Value string `json:"value"`
 }
 
-// MarshalJSON serialises Token as json
+// MarshalJSON serializes Token as json
 func (entity *Token) MarshalJSON() ([]byte, error) {
 	return []byte("{\"value\":\"" + entity.ID + "\"}"), nil
 }
