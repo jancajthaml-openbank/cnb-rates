@@ -125,6 +125,11 @@ class UnitHelper(object):
       fd.write(str(os.linesep).join("CNB_RATES_{!s}={!s}".format(k, v) for (k, v) in options.items()))
 
   def collect_logs(self):
+    (code, result, error) = execute(['journalctl', '-o', 'cat', '--no-pager'])
+    if code == 0:
+      with open('reports/blackbox-tests/logs/journal.log', 'w') as fd:
+        fd.write(result)
+
     for unit in set(self.__get_systemd_units() + self.units):
       (code, result, error) = execute(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'])
       if code != 0 or not result:

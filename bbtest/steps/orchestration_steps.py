@@ -12,7 +12,7 @@ import datetime
 def timeshift(context, value):
   context.timeshift = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z').astimezone(datetime.timezone.utc)
 
-  @eventually(10)
+  @eventually(30)
   def wait_for_import_to_start():
     (code, result, error) = execute(['timedatectl', 'set-time', context.timeshift.strftime('%Y-%m-%d %H:%M:%S')])
     assert code == 0, "timedatectl set-time failed with: {} {}".format(result, error)
@@ -23,7 +23,7 @@ def timeshift(context, value):
     assert code == 0, str(result) + ' ' + str(error)
     assert 'SubState=running' in result, str(result) + ' ' + str(error)
 
-  @eventually(10)
+  @eventually(30)
   def wait_for_import_to_stop():
     (code, result, error) = execute(["systemctl", "stop", "cnb-rates-import.service"])
     assert code == 0, str(result) + ' ' + str(error)
