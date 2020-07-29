@@ -15,7 +15,7 @@
 package integration
 
 import (
-  "github.com/jancajthaml-openbank/cnb-rates-import/logging"
+	"github.com/jancajthaml-openbank/cnb-rates-import/logging"
 )
 
 var log = logging.NewLogger("integration")

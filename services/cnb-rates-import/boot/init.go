@@ -20,9 +20,9 @@ import (
 
 	"github.com/jancajthaml-openbank/cnb-rates-import/config"
 	"github.com/jancajthaml-openbank/cnb-rates-import/integration"
+	"github.com/jancajthaml-openbank/cnb-rates-import/logging"
 	"github.com/jancajthaml-openbank/cnb-rates-import/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
-	"github.com/jancajthaml-openbank/cnb-rates-import/logging"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 )

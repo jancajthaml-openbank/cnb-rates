@@ -15,7 +15,7 @@
 package batch
 
 import (
-  "github.com/jancajthaml-openbank/cnb-rates-batch/logging"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/logging"
 )
 
 var log = logging.NewLogger("batch")
