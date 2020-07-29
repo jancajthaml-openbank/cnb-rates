@@ -5,8 +5,8 @@ Feature: Metrics test
       | property            | value |
       | METRICS_REFRESHRATE |    1s |
 
-    Then metrics file /tmp/reports/blackbox-tests/metrics/metrics.json should have following keys:
+    Then metrics file reports/blackbox-tests/metrics/metrics.json should have following keys:
       | key             |
       | gatewayLatency  |
       | importLatency   |
-    And metrics file /tmp/reports/blackbox-tests/metrics/metrics.json has permissions -rw-r--r--
+    And metrics file reports/blackbox-tests/metrics/metrics.json has permissions -rw-r--r--
