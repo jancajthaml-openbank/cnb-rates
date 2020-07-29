@@ -30,3 +30,4 @@ def after_all(context):
   execute(['timedatectl', 'set-ntp', '1'])
   execute(['systemctl', 'restart', 'systemd-timedated'])
   execute(['systemctl', 'restart', 'systemd-timesyncd'])
+  execute(['timedatectl', 'set-time', '2020-01-01 12:12:12'])
