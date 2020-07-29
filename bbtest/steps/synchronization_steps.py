@@ -23,7 +23,7 @@ def step_impl(context, endtime):
   @eventually(30)
   def wait_for_files():
     for day in days:
-      day_file = '/tmp/reports/blackbox-tests/data/rates/cnb/raw/fx-main/{}'.format(day.strftime('%d.%m.%Y'))
+      day_file = 'reports/blackbox-tests/data/rates/cnb/raw/fx-main/{}'.format(day.strftime('%d.%m.%Y'))
       assert os.path.isfile(day_file), 'file {} not found'.format(day_file)
   wait_for_files()
 
@@ -42,6 +42,6 @@ def step_impl(context, endtime):
   @eventually(30)
   def wait_for_files():
     for day in days:
-      day_file = '/tmp/reports/blackbox-tests/data/rates/cnb/processed/fx-main/d/{}'.format(day.strftime('%d.%m.%Y'))
+      day_file = 'reports/blackbox-tests/data/rates/cnb/processed/fx-main/d/{}'.format(day.strftime('%d.%m.%Y'))
       assert os.path.isfile(day_file), 'file {} not found'.format(day_file)
   wait_for_files()
