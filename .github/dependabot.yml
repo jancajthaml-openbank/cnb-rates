@@ -1,0 +1,18 @@
+version: 2
+
+updates:
+
+  - package-ecosystem: "gomod"
+    directory: "/services/cnb-rates-rest"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "gomod"
+    directory: "/services/cnb-rates-import"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "gomod"
+    directory: "/services/cnb-rates-batch"
+    schedule:
+      interval: "daily"
