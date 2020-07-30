@@ -5,7 +5,6 @@ from behave import *
 from helpers.shell import execute
 from helpers.eventually import eventually
 import datetime
-import time
 import os
 
 

@@ -1,9 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import threading
 from http.server import HTTPServer
 import ssl
 import os
+import time
 import tempfile
-
 from .handler import RequestHandler
 from .logic import BussinessLogic
 
@@ -16,7 +19,14 @@ class CNBMock(threading.Thread):
     self.port = 4000
     self.__keyfile = tempfile.NamedTemporaryFile()
     self.__certfile = tempfile.NamedTemporaryFile()
-    os.system('openssl req -x509 -nodes -newkey rsa:2048 -keyout "{}" -out "{}" -days 1 -subj "/C=CZ/ST=Czechia/L=Prague/O=OpenBanking/OU=IT/CN=localhost/emailAddress=jan.cajthaml@gmail.com" > /dev/null 2>&1'.format(self.__keyfile.name, self.__certfile.name))
+
+    # https://stackoverflow.com/questions/10175812/how-to-create-a-self-signed-certificate-with-openssl/27931596#27931596
+    # https://stackoverflow.com/questions/21297139/how-do-you-sign-a-certificate-signing-request-with-your-certification-authority/21340898#21340898
+
+    os.system("sed -i '/^.*v3_ca.*/a subjectAltName = IP:127.0.0.1' /etc/ssl/openssl.cnf")
+    os.system('faketime "1991-01-01 00:00:00" openssl req -x509 -nodes -newkey rsa:2048 -keyout "{}" -out "{}" -days 36500 -subj "/CN=127.0.0.1" > /dev/null 2>&1'.format(self.__keyfile.name, self.__certfile.name))
+    os.system('cp {} /usr/local/share/ca-certificates/ > /dev/null 2>&1'.format(self.__certfile.name))
+    os.system('update-ca-certificates > /dev/null 2>&1')
 
   def start(self):
     self.httpd = HTTPServer(('127.0.0.1', self.port), RequestHandler)

@@ -1,3 +1,4 @@
+@wip
 Feature: CNB Rates import
 
   Scenario: eventually downloads historic rates from cloud

@@ -10,20 +10,19 @@ import datetime
 
 @given('current time is "{value}"')
 def timeshift(context, value):
-  context.timeshift = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z').astimezone(datetime.timezone.utc)
+  context.new_epoch = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z').astimezone(datetime.timezone.utc)
 
-  @eventually(10)
+  @eventually(30)
   def wait_for_import_to_start():
-    (code, result, error) = execute(['timedatectl', 'set-time', context.timeshift.strftime('%Y-%m-%d %H:%M:%S')])
-    assert code == 0, "timedatectl set-time failed with: {} {}".format(result, error)
-    context.timeshift += datetime.timedelta(seconds=1)
+    context.timeshift.set_date_time(context.new_epoch)
+    context.new_epoch += datetime.timedelta(seconds=1)
     (code, result, error) = execute(["systemctl", "restart", "cnb-rates-import.timer"])
     assert code == 0, str(result) + ' ' + str(error)
     (code, result, error) = execute(["systemctl", "show", "-p", "SubState", 'cnb-rates-import.service'])
     assert code == 0, str(result) + ' ' + str(error)
     assert 'SubState=running' in result, str(result) + ' ' + str(error)
 
-  @eventually(10)
+  @eventually(30)
   def wait_for_import_to_stop():
     (code, result, error) = execute(["systemctl", "stop", "cnb-rates-import.service"])
     assert code == 0, str(result) + ' ' + str(error)
@@ -33,6 +32,7 @@ def timeshift(context, value):
     assert 'SubState=dead' in result, str(result) + ' ' + str(error)
 
   wait_for_import_to_start()
+  del context.new_epoch
   wait_for_import_to_stop()
 
 
