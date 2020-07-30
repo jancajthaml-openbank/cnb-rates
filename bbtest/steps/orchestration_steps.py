@@ -10,13 +10,13 @@ import datetime
 
 @given('current time is "{value}"')
 def timeshift(context, value):
-  context.timeshift = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z').astimezone(datetime.timezone.utc)
+  new_epoch = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z').astimezone(datetime.timezone.utc)
+
 
   @eventually(30)
   def wait_for_import_to_start():
-    (code, result, error) = execute(['timedatectl', 'set-time', context.timeshift.strftime('%Y-%m-%d %H:%M:%S')])
-    assert code == 0, "timedatectl set-time failed with: {} {}".format(result, error)
-    context.timeshift += datetime.timedelta(seconds=1)
+    context.timeshift.set_date_time(new_epoch)
+    new_epoch += datetime.timedelta(seconds=1)
     (code, result, error) = execute(["systemctl", "restart", "cnb-rates-import.timer"])
     assert code == 0, str(result) + ' ' + str(error)
     (code, result, error) = execute(["systemctl", "show", "-p", "SubState", 'cnb-rates-import.service'])
