@@ -18,7 +18,6 @@ class TimeshiftHelper(object):
   def bootstrap(self):
     execute(['timedatectl', 'set-ntp', '0'])
     execute(['timedatectl', 'set-local-rtc', '0'])
-    execute(['systemctl', 'restart', 'systemd-timedated'])
 
   def teardown(self):
     execute(['timedatectl', 'set-local-rtc', '1'])
