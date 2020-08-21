@@ -14,13 +14,17 @@
 
 package api
 
-import "net/http"
+import (
+	"net/http"
 
-// HealtCheck returns 200 OK
-func HealtCheck(server *Server) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(emptyJSONObject)
+	"github.com/labstack/echo/v4"
+)
+
+// HealtCheck returns 200 OK if service is healthy, 503 otherwise
+func HealtCheck() func(c echo.Context) error {
+	return func(c echo.Context) error {
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		c.Response().WriteHeader(http.StatusOK)
+		return nil
 	}
 }

@@ -15,64 +15,48 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/jancajthaml-openbank/cnb-rates-rest/persistence"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/utils"
 
-	"github.com/gorilla/mux"
+	localfs "github.com/jancajthaml-openbank/local-fs"
+	"github.com/labstack/echo/v4"
 )
 
-// RatesPartial returns http handler for single currency
-func RatesPartial(server *Server) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
+// GetRates return existing tokens of given curreny
+func GetRates(storage *localfs.PlaintextStorage) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 
-		currency := vars["currency"]
-
+		currency := c.Param("currency")
 		if currency == "" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNotFound)
-			w.Write(emptyJSONObject)
-			return
+			return fmt.Errorf("missing currency")
 		}
 
-		switch r.Method {
-
-		case "GET":
-			GetRates(server, currency, w, r)
-			return
-
-		default:
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			w.Write(emptyJSONObject)
-			return
-
+		rates, err := persistence.LoadRates(storage, currency)
+		if err != nil {
+			return err
 		}
-	}
-}
 
-// GetRates returns rates for given currency
-func GetRates(server *Server, currency string, w http.ResponseWriter, r *http.Request) {
-	tokens, err := persistence.LoadRates(server.Storage, currency)
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(emptyJSONArray)
-		return
-	}
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextPlainCharsetUTF8)
+		c.Response().WriteHeader(http.StatusOK)
 
-	resp, err := utils.JSON.Marshal(tokens)
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(emptyJSONArray)
-		return
-	}
+		for idx, rate := range rates {
+			chunk, err := utils.JSON.Marshal(rate)
+			if err != nil {
+				return err
+			}
+			if idx == len(rates)-1 {
+				c.Response().Write(chunk)
+			} else {
+				c.Response().Write(chunk)
+				c.Response().Write([]byte("\n"))
+			}
+			c.Response().Flush()
+		}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(resp)
-	return
+		return nil
+	}
 }
