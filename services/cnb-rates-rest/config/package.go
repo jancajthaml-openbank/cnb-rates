@@ -18,4 +18,4 @@ import (
 	"github.com/jancajthaml-openbank/cnb-rates-rest/logging"
 )
 
-var log = logging.NewLogger("config")
+var log = logging.New("config")

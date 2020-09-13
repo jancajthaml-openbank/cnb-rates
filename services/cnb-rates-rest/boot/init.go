@@ -54,7 +54,8 @@ func Initialize() Program {
 	restDaemon := api.NewServer(
 		ctx,
 		cfg.ServerPort,
-		cfg.SecretsPath,
+		cfg.ServerCert,
+		cfg.ServerKey,
 		&storage,
 	)
 

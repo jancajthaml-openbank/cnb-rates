@@ -22,7 +22,8 @@ class UnitHelper(object):
       "METRICS_REFRESHRATE": "1s",
       "METRICS_OUTPUT": "{}/reports/blackbox-tests/metrics".format(os.getcwd()),
       "HTTP_PORT": "443",
-      "SECRETS": "/etc/cnb-rates/secrets",
+      "SERVER_KEY": "/etc/cnb-rates/secrets/domain.local.key",
+      "SERVER_CERT": "/etc/cnb-rates/secrets/domain.local.crt",
       #"METRICS_CONTINUOUS": "true",  # fixme implement
     }
 

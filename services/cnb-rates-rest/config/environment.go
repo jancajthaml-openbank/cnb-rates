@@ -24,14 +24,16 @@ import (
 
 func loadConfFromEnv() Configuration {
 	logLevel := strings.ToUpper(getEnvString("CNB_RATES_LOG_LEVEL", "DEBUG"))
-	secrets := getEnvString("CNB_RATES_SECRETS", "")
+	serverKey := getEnvString("CNB_RATES_SERVER_KEY", "")
+	serverCert := getEnvString("CNB_RATES_SERVER_CERT", "")
 	rootStorage := getEnvString("CNB_RATES_STORAGE", "/data")
 	port := getEnvInteger("CNB_RATES_HTTP_PORT", 4011)
 	metricsOutput := getEnvFilename("CNB_RATES_METRICS_OUTPUT", "/tmp")
 	metricsRefreshRate := getEnvDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
 
-	if secrets == "" || rootStorage == "" {
-		log.Fatal("missing required parameter to run")
+	if rootStorage == "" || serverKey == "" || serverCert == "" {
+		log.Error().Msg("missing required parameter to run")
+		panic("missing required parameter to run")
 	}
 
 	return Configuration{
@@ -39,7 +41,8 @@ func loadConfFromEnv() Configuration {
 		MetricsOutput:      metricsOutput,
 		RootStorage:        rootStorage,
 		ServerPort:         port,
-		SecretsPath:        secrets,
+		ServerKey:          serverKey,
+		ServerCert:         serverCert,
 		LogLevel:           logLevel,
 	}
 }
@@ -70,7 +73,7 @@ func getEnvInteger(key string, fallback int) int {
 	}
 	cast, err := strconv.Atoi(value)
 	if err != nil {
-		log.Errorf("invalid value of variable %s", key)
+		log.Error().Msgf("invalid value of variable %s", key)
 		return fallback
 	}
 	return cast
@@ -83,7 +86,7 @@ func getEnvDuration(key string, fallback time.Duration) time.Duration {
 	}
 	cast, err := time.ParseDuration(value)
 	if err != nil {
-		log.Errorf("invalid value of variable %s", key)
+		log.Error().Msgf("invalid value of variable %s", key)
 		return fallback
 	}
 	return cast
