@@ -32,15 +32,18 @@ func loadConfFromEnv() Configuration {
 	metricsRefreshRate := getEnvDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
 
 	if rootStorage == "" {
-		log.Fatal("missing required parameter to run")
+		log.Error().Msg("missing required parameter to run")
+		panic("missing required parameter to run")
 	}
 
 	if os.MkdirAll(rootStorage+"/rates/cnb/"+utils.FXMainOfflineDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert daily offline directory")
+		log.Error().Msg("unable to assert daily offline directory")
+		panic("unable to assert daily offline directory")
 	}
 
 	if os.MkdirAll(rootStorage+"/rates/cnb/"+utils.FXOtherOfflineDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert monthly offline directory")
+		log.Error().Msg("unable to assert monthly offline directory")
+		panic("unable to assert monthly offline directory")
 	}
 
 	return Configuration{
@@ -78,7 +81,7 @@ func getEnvInteger(key string, fallback int) int {
 	}
 	cast, err := strconv.Atoi(value)
 	if err != nil {
-		log.Errorf("invalid value of variable %s", key)
+		log.Error().Msgf("invalid value of variable %s", key)
 		return fallback
 	}
 	return cast
@@ -91,7 +94,7 @@ func getEnvDuration(key string, fallback time.Duration) time.Duration {
 	}
 	cast, err := time.ParseDuration(value)
 	if err != nil {
-		log.Errorf("invalid value of variable %s", key)
+		log.Error().Msgf("invalid value of variable %s", key)
 		return fallback
 	}
 	return cast

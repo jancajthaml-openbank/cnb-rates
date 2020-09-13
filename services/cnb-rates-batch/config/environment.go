@@ -32,33 +32,40 @@ func loadConfFromEnv() Configuration {
 	metricsRefreshRate := getEnvDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
 
 	if rootStorage == "" {
-		log.Fatal("missing required parameter to run")
+		log.Error().Msg("missing required parameter to run")
+		panic("missing required parameter to run")
 	}
 
 	rootStorage = rootStorage + "/rates/cnb"
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXMainDailyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert fx-main daily cache directory")
+		log.Error().Msg("unable to assert fx-main daily cache directory")
+		panic("unable to assert fx-main daily cache directory")
 	}
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXMainMonthlyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert fx-main monthly cache directory")
+		log.Error().Msg("unable to assert fx-main monthly cache directory")
+		panic("unable to assert fx-main monthly cache directory")
 	}
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXMainYearlyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert fx-main yearly cache directory")
+		log.Error().Msg("unable to assert fx-main yearly cache directory")
+		panic("unable to assert fx-main yearly cache directory")
 	}
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXOtherDailyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert fx-other daily cache directory")
+		log.Error().Msg("unable to assert fx-other daily cache directory")
+		panic("unable to assert fx-other daily cache directory")
 	}
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXOtherMonthlyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert fx-other monthly cache directory")
+		log.Error().Msg("unable to assert fx-other monthly cache directory")
+		panic("unable to assert fx-other monthly cache directory")
 	}
 
 	if os.MkdirAll(rootStorage+"/"+utils.FXOtherYearlyCacheDirectory(), os.ModePerm) != nil {
-		log.Fatal("unable to assert fx-other yearly cache directory")
+		log.Error().Msg("unable to assert fx-other yearly cache directory")
+		panic("unable to assert fx-other yearly cache directory")
 	}
 
 	return Configuration{
@@ -97,7 +104,7 @@ func getEnvInteger(key string, fallback int) int {
 	}
 	cast, err := strconv.Atoi(value)
 	if err != nil {
-		log.Errorf("invalid value of variable %s", key)
+		log.Error().Msgf("invalid value of variable %s", key)
 		return fallback
 	}
 	return cast
@@ -110,7 +117,7 @@ func getEnvDuration(key string, fallback time.Duration) time.Duration {
 	}
 	cast, err := time.ParseDuration(value)
 	if err != nil {
-		log.Errorf("invalid value of variable %s", key)
+		log.Error().Msgf("invalid value of variable %s", key)
 		return fallback
 	}
 	return cast

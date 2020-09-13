@@ -72,7 +72,7 @@ func (batch Batch) WaitReady(deadline time.Duration) (err error) {
 
 func (batch Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
 	defer wg.Done()
-	log.Info("Processing new fx-main rates")
+	log.Info().Msg("Processing new fx-main rates")
 
 	days, err := utils.GetFXMainUnprocessedFiles(batch.storage)
 	if err != nil {
@@ -82,25 +82,25 @@ func (batch Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
 	cachePath := utils.FXMainOfflineDirectory() + "/"
 
 	for _, day := range days {
-		log.Infof("Processing new fx-main for %s", day)
+		log.Info().Msgf("Processing new fx-main for %s", day)
 		data, err := batch.storage.ReadFileFully(cachePath + day)
 		if err != nil {
-			log.Warnf("error parse main-fx CSV data for day %s, %+v\n", day, err)
+			log.Warn().Msgf("error parse main-fx CSV data for day %s, %+v\n", day, err)
 			continue
 		}
 		result, err := utils.ParseCSV(day, data)
 		if err != nil {
-			log.Warnf("error parse fx-main CSV data for day %s, %+v\n", day, err)
+			log.Warn().Msgf("error parse fx-main CSV data for day %s, %+v\n", day, err)
 			continue
 		}
 		bytes, err := result.MarshalJSON()
 		if err != nil {
-			log.Warnf("error marshall fx-main data for day %s, %+v\n", day, err)
+			log.Warn().Msgf("error marshall fx-main data for day %s, %+v\n", day, err)
 			continue
 		}
 		err = batch.storage.WriteFile(utils.FXMainDailyCachePath(result.Date), bytes)
 		if err != nil {
-			log.Warnf("error write cache fail fx-main data for day %s, %+v\n", day, err)
+			log.Warn().Msgf("error write cache fail fx-main data for day %s, %+v\n", day, err)
 			continue
 		}
 		batch.metrics.DayProcessed()
@@ -112,7 +112,7 @@ func (batch Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
 func (batch Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
 	defer wg.Done()
 
-	log.Info("Processing new fx-other rates")
+	log.Info().Msg("Processing new fx-other rates")
 
 	days, err := utils.GetFXOtherUnprocessedFiles(batch.storage)
 	if err != nil {
@@ -121,25 +121,25 @@ func (batch Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
 
 	cachePath := utils.FXOtherOfflineDirectory() + "/"
 	for _, day := range days {
-		log.Infof("Processing new fx-other for %s", day)
+		log.Info().Msgf("Processing new fx-other for %s", day)
 		data, err := batch.storage.ReadFileFully(cachePath + day)
 		if err != nil {
-			log.Warnf("error parse fx-other CSV data for day %s, %+v\n", day, err)
+			log.Warn().Msgf("error parse fx-other CSV data for day %s, %+v\n", day, err)
 			continue
 		}
 		result, err := utils.ParseCSV(day, data)
 		if err != nil {
-			log.Warnf("error parse fx-other CSV data for day %s, %+v\n", day, err)
+			log.Warn().Msgf("error parse fx-other CSV data for day %s, %+v\n", day, err)
 			continue
 		}
 		bytes, err := result.MarshalJSON()
 		if err != nil {
-			log.Warnf("error marshall fx-other data for mo %s, %+v\n", day, err)
+			log.Warn().Msgf("error marshall fx-other data for mo %s, %+v\n", day, err)
 			continue
 		}
 		err = batch.storage.WriteFile(utils.FXOtherDailyCachePath(result.Date), bytes)
 		if err != nil {
-			log.Warnf("error write cache fail fx-other data for day %s, %+v\n", day, err)
+			log.Warn().Msgf("error write cache fail fx-other data for day %s, %+v\n", day, err)
 			continue
 		}
 		batch.metrics.DayProcessed()
@@ -172,7 +172,7 @@ func (batch Batch) Start() {
 		return
 	}
 
-	log.Info("Start cnb-batch daemon")
+	log.Info().Msg("Start cnb-batch daemon")
 
 	batch.ProcessNewFX()
 
@@ -189,5 +189,5 @@ func (batch Batch) Start() {
 	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 
 	batch.WaitStop()
-	log.Info("Stop batch-batch daemon")
+	log.Info().Msg("Stop batch-batch daemon")
 }

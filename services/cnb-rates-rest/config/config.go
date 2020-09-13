@@ -22,8 +22,10 @@ type Configuration struct {
 	RootStorage string
 	// ServerPort is port which server is bound to
 	ServerPort int
-	// SecretsPath directory where .key and .crt is stored
-	SecretsPath string
+	// ServerKey path to server tls key file
+	ServerKey string
+	// ServerCert path to server tls cert file
+	ServerCert string
 	// LogLevel ignorecase log level
 	LogLevel string
 	// MetricsRefreshRate represents interval in which in memory metrics should be
