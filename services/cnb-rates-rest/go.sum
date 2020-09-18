@@ -6,6 +6,8 @@ github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZm
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/jancajthaml-openbank/local-fs v1.1.4 h1:HjMBdyRsJuNgdz9xX/sjDL7qJ90IseSJUkNSwUoyHdY=
 github.com/jancajthaml-openbank/local-fs v1.1.4/go.mod h1:Hulcb84Ev/x3d6BNM3tMWvkoMjAHxvUAfRsr88kdlpE=
+github.com/jancajthaml-openbank/local-fs v1.1.5 h1:gx4laehipkYP+bd5lD6/CnQrUE5TC/cuimmf+g/fduY=
+github.com/jancajthaml-openbank/local-fs v1.1.5/go.mod h1:1NbSlgcIJspEkr5PqtPZp7iixDUtHbt59jBtc+PNsGE=
 github.com/json-iterator/go v1.1.10 h1:Kz6Cvnvv2wGdaG/V8yMvfkmNiXq9Ya2KUv4rouJJr68=
 github.com/json-iterator/go v1.1.10/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
 github.com/labstack/echo/v4 v4.1.17 h1:PQIBaRplyRy3OjwILGkPg89JRtH2x5bssi59G2EL3fo=
