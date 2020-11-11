@@ -30,13 +30,18 @@ import (
 // Batch represents batch subroutine
 type Batch struct {
 	utils.DaemonSupport
-	storage *localfs.PlaintextStorage
+	storage localfs.Storage
 	metrics *metrics.Metrics
 }
 
 // NewBatch returns batch fascade
-func NewBatch(ctx context.Context, metrics *metrics.Metrics, storage *localfs.PlaintextStorage) Batch {
-	return Batch{
+func NewBatch(ctx context.Context, rootStorage string, metrics *metrics.Metrics) *Batch {
+	storage, err := localfs.NewPlaintextStorage(rootStorage)
+	if err != nil {
+		log.Error().Msgf("Failed to ensure storage %+v", err)
+		return nil
+	}
+	return &Batch{
 		DaemonSupport: utils.NewDaemonSupport(ctx, "batch"),
 		storage:       storage,
 		metrics:       metrics,
@@ -44,7 +49,10 @@ func NewBatch(ctx context.Context, metrics *metrics.Metrics, storage *localfs.Pl
 }
 
 // WaitReady wait for batch to be ready
-func (batch Batch) WaitReady(deadline time.Duration) (err error) {
+func (batch *Batch) WaitReady(deadline time.Duration) (err error) {
+	if batch == nil {
+		return nil
+	}
 	defer func() {
 		if e := recover(); e != nil {
 			switch x := e.(type) {
@@ -70,7 +78,11 @@ func (batch Batch) WaitReady(deadline time.Duration) (err error) {
 	}
 }
 
-func (batch Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
+func (batch *Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
+	if batch == nil {
+		return nil
+	}
+
 	defer wg.Done()
 	log.Info().Msg("Processing new fx-main rates")
 
@@ -109,7 +121,11 @@ func (batch Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
 	return nil
 }
 
-func (batch Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
+func (batch *Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
+	if batch == nil {
+		return nil
+	}
+
 	defer wg.Done()
 
 	log.Info().Msg("Processing new fx-other rates")
@@ -148,7 +164,11 @@ func (batch Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
 	return nil
 }
 
-func (batch Batch) ProcessNewFX() {
+func (batch *Batch) ProcessNewFX() {
+	if batch == nil {
+		return
+	}
+
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -161,7 +181,11 @@ func (batch Batch) ProcessNewFX() {
 }
 
 // Start handles everything needed to start batch daemon
-func (batch Batch) Start() {
+func (batch *Batch) Start() {
+	if batch == nil {
+		return
+	}
+
 	batch.MarkReady()
 
 	select {

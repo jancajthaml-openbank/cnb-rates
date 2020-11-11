@@ -26,7 +26,7 @@ import (
 // Metrics holds metrics counters
 type Metrics struct {
 	utils.DaemonSupport
-	storage        localfs.PlaintextStorage
+	storage        localfs.Storage
 	refreshRate    time.Duration
 	daysImported   metrics.Counter
 	monthsImported metrics.Counter
@@ -35,10 +35,15 @@ type Metrics struct {
 }
 
 // NewMetrics returns blank metrics holder
-func NewMetrics(ctx context.Context, output string, refreshRate time.Duration) Metrics {
-	return Metrics{
+func NewMetrics(ctx context.Context, output string, refreshRate time.Duration) *Metrics {
+	storage, err := localfs.NewPlaintextStorage(output)
+	if err != nil {
+		log.Error().Msgf("Failed to ensure storage %+v", err)
+		return nil
+	}
+	return &Metrics{
 		DaemonSupport:  utils.NewDaemonSupport(ctx, "metrics"),
-		storage:        localfs.NewPlaintextStorage(output),
+		storage:        storage,
 		refreshRate:    refreshRate,
 		daysImported:   metrics.NewCounter(),
 		monthsImported: metrics.NewCounter(),
@@ -49,26 +54,42 @@ func NewMetrics(ctx context.Context, output string, refreshRate time.Duration) M
 
 // TimeGatewayLatency measure execution of gateway sync
 func (metrics *Metrics) TimeGatewayLatency(f func()) {
+	if metrics == nil {
+		return
+	}
 	metrics.gatewayLatency.Time(f)
 }
 
 // TimeImportLatency measure execution of import
 func (metrics *Metrics) TimeImportLatency(f func()) {
+	if metrics == nil {
+		return
+	}
 	metrics.importLatency.Time(f)
 }
 
 // DayImported increments days imported by one
 func (metrics *Metrics) DayImported() {
+	if metrics == nil {
+		return
+	}
 	metrics.daysImported.Inc(1)
 }
 
 // MonthImported increments months imported by one
 func (metrics *Metrics) MonthImported() {
+	if metrics == nil {
+		return
+	}
 	metrics.monthsImported.Inc(1)
 }
 
 // Start handles everything needed to start metrics daemon
-func (metrics Metrics) Start() {
+func (metrics *Metrics) Start() {
+	if metrics == nil {
+		return
+	}
+
 	ticker := time.NewTicker(metrics.refreshRate)
 	defer ticker.Stop()
 
@@ -87,7 +108,7 @@ func (metrics Metrics) Start() {
 		return
 	}
 
-	log.Info().Msgf("Start metrics daemon, update each %v into %v", metrics.refreshRate, metrics.storage.Root)
+	log.Info().Msgf("Start metrics daemon, update file each %v", metrics.refreshRate)
 
 	go func() {
 		for {
