@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019, Jan Cajthaml <jan.cajthaml@gmail.com>
+// Copyright (c) 2016-2020, Jan Cajthaml <jan.cajthaml@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,43 +22,33 @@ import (
 	"time"
 )
 
-func loadConfFromEnv() Configuration {
-	logLevel := strings.ToUpper(getEnvString("CNB_RATES_LOG_LEVEL", "DEBUG"))
-	serverKey := getEnvString("CNB_RATES_SERVER_KEY", "")
-	serverCert := getEnvString("CNB_RATES_SERVER_CERT", "")
-	rootStorage := getEnvString("CNB_RATES_STORAGE", "/data")
-	port := getEnvInteger("CNB_RATES_HTTP_PORT", 4011)
-	metricsOutput := getEnvFilename("CNB_RATES_METRICS_OUTPUT", "/tmp")
-	metricsRefreshRate := getEnvDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
-
-	if rootStorage == "" || serverKey == "" || serverCert == "" {
-		log.Error().Msg("missing required parameter to run")
-		panic("missing required parameter to run")
+func envBoolean(key string, fallback bool) bool {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
 	}
-
-	return Configuration{
-		MetricsRefreshRate: metricsRefreshRate,
-		MetricsOutput:      metricsOutput,
-		RootStorage:        rootStorage,
-		ServerPort:         port,
-		ServerKey:          serverKey,
-		ServerCert:         serverCert,
-		LogLevel:           logLevel,
+	cast, err := strconv.ParseBool(value)
+	if err != nil {
+		log.Error().Msgf("invalid value of variable %s", key)
+		return fallback
 	}
+	return cast
 }
-func getEnvFilename(key string, fallback string) string {
+
+func envFilename(key string, fallback string) string {
 	var value = strings.TrimSpace(os.Getenv(key))
 	if value == "" {
 		return fallback
 	}
 	value = filepath.Clean(value)
 	if os.MkdirAll(value, os.ModePerm) != nil {
+		log.Error().Msgf("invalid value of variable %s", key)
 		return fallback
 	}
 	return value
 }
 
-func getEnvString(key string, fallback string) string {
+func envString(key string, fallback string) string {
 	value := strings.TrimSpace(os.Getenv(key))
 	if value == "" {
 		return fallback
@@ -66,7 +56,7 @@ func getEnvString(key string, fallback string) string {
 	return value
 }
 
-func getEnvInteger(key string, fallback int) int {
+func envInteger(key string, fallback int) int {
 	value := strings.TrimSpace(os.Getenv(key))
 	if value == "" {
 		return fallback
@@ -79,7 +69,7 @@ func getEnvInteger(key string, fallback int) int {
 	return cast
 }
 
-func getEnvDuration(key string, fallback time.Duration) time.Duration {
+func envDuration(key string, fallback time.Duration) time.Duration {
 	value := strings.TrimSpace(os.Getenv(key))
 	if value == "" {
 		return fallback

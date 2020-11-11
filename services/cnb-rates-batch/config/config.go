@@ -15,7 +15,11 @@
 package config
 
 import (
+	"os"
+	"strings"
 	"time"
+
+	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
 )
 
 // Configuration of application
@@ -35,5 +39,54 @@ type Configuration struct {
 
 // GetConfig loads application configuration
 func GetConfig() Configuration {
-	return loadConfFromEnv()
+	logLevel := strings.ToUpper(envString("CNB_RATES_LOG_LEVEL", "DEBUG"))
+	rootStorage := envString("CNB_RATES_STORAGE", "/data")
+	cnbGateway := envString("CNB_RATES_CNB_GATEWAY", "https://www.cnb.cz")
+	metricsOutput := envFilename("CNB_RATES_METRICS_OUTPUT", "/tmp")
+	metricsRefreshRate := envDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
+
+	if rootStorage == "" {
+		log.Error().Msg("missing required parameter to run")
+		panic("missing required parameter to run")
+	}
+
+	rootStorage = rootStorage + "/rates/cnb"
+
+	if os.MkdirAll(rootStorage+"/"+utils.FXMainDailyCacheDirectory(), os.ModePerm) != nil {
+		log.Error().Msg("unable to assert fx-main daily cache directory")
+		panic("unable to assert fx-main daily cache directory")
+	}
+
+	if os.MkdirAll(rootStorage+"/"+utils.FXMainMonthlyCacheDirectory(), os.ModePerm) != nil {
+		log.Error().Msg("unable to assert fx-main monthly cache directory")
+		panic("unable to assert fx-main monthly cache directory")
+	}
+
+	if os.MkdirAll(rootStorage+"/"+utils.FXMainYearlyCacheDirectory(), os.ModePerm) != nil {
+		log.Error().Msg("unable to assert fx-main yearly cache directory")
+		panic("unable to assert fx-main yearly cache directory")
+	}
+
+	if os.MkdirAll(rootStorage+"/"+utils.FXOtherDailyCacheDirectory(), os.ModePerm) != nil {
+		log.Error().Msg("unable to assert fx-other daily cache directory")
+		panic("unable to assert fx-other daily cache directory")
+	}
+
+	if os.MkdirAll(rootStorage+"/"+utils.FXOtherMonthlyCacheDirectory(), os.ModePerm) != nil {
+		log.Error().Msg("unable to assert fx-other monthly cache directory")
+		panic("unable to assert fx-other monthly cache directory")
+	}
+
+	if os.MkdirAll(rootStorage+"/"+utils.FXOtherYearlyCacheDirectory(), os.ModePerm) != nil {
+		log.Error().Msg("unable to assert fx-other yearly cache directory")
+		panic("unable to assert fx-other yearly cache directory")
+	}
+
+	return Configuration{
+		RootStorage:        rootStorage,
+		CNBGateway:         cnbGateway,
+		LogLevel:           logLevel,
+		MetricsRefreshRate: metricsRefreshRate,
+		MetricsOutput:      metricsOutput,
+	}
 }

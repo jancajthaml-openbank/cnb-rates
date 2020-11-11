@@ -15,7 +15,11 @@
 package config
 
 import (
+	"os"
+	"strings"
 	"time"
+
+	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
 )
 
 // Configuration of application
@@ -35,5 +39,32 @@ type Configuration struct {
 
 // GetConfig loads application configuration
 func GetConfig() Configuration {
-	return loadConfFromEnv()
+	logLevel := strings.ToUpper(envString("CNB_RATES_LOG_LEVEL", "DEBUG"))
+	rootStorage := envString("CNB_RATES_STORAGE", "/data")
+	cnbGateway := envString("CNB_RATES_CNB_GATEWAY", "https://www.cnb.cz")
+	metricsOutput := envFilename("CNB_RATES_METRICS_OUTPUT", "/tmp")
+	metricsRefreshRate := envDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
+
+	if rootStorage == "" {
+		log.Error().Msg("missing required parameter to run")
+		panic("missing required parameter to run")
+	}
+
+	if os.MkdirAll(rootStorage+"/rates/cnb/"+utils.FXMainOfflineDirectory(), os.ModePerm) != nil {
+		log.Error().Msg("unable to assert daily offline directory")
+		panic("unable to assert daily offline directory")
+	}
+
+	if os.MkdirAll(rootStorage+"/rates/cnb/"+utils.FXOtherOfflineDirectory(), os.ModePerm) != nil {
+		log.Error().Msg("unable to assert monthly offline directory")
+		panic("unable to assert monthly offline directory")
+	}
+
+	return Configuration{
+		RootStorage:        rootStorage + "/rates/cnb",
+		CNBGateway:         cnbGateway,
+		LogLevel:           logLevel,
+		MetricsRefreshRate: metricsRefreshRate,
+		MetricsOutput:      metricsOutput,
+	}
 }
