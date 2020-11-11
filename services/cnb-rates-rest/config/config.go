@@ -14,7 +14,10 @@
 
 package config
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // Configuration of application
 type Configuration struct {
@@ -37,5 +40,26 @@ type Configuration struct {
 
 // GetConfig loads application configuration
 func GetConfig() Configuration {
-	return loadConfFromEnv()
+	logLevel := strings.ToUpper(envString("CNB_RATES_LOG_LEVEL", "DEBUG"))
+	serverKey := envString("CNB_RATES_SERVER_KEY", "")
+	serverCert := envString("CNB_RATES_SERVER_CERT", "")
+	rootStorage := envString("CNB_RATES_STORAGE", "/data")
+	port := envInteger("CNB_RATES_HTTP_PORT", 4011)
+	metricsOutput := envFilename("CNB_RATES_METRICS_OUTPUT", "/tmp")
+	metricsRefreshRate := envDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
+
+	if rootStorage == "" || serverKey == "" || serverCert == "" {
+		log.Error().Msg("missing required parameter to run")
+		panic("missing required parameter to run")
+	}
+
+	return Configuration{
+		MetricsRefreshRate: metricsRefreshRate,
+		MetricsOutput:      metricsOutput,
+		RootStorage:        rootStorage,
+		ServerPort:         port,
+		ServerKey:          serverKey,
+		ServerCert:         serverCert,
+		LogLevel:           logLevel,
+	}
 }
