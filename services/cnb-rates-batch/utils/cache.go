@@ -91,7 +91,7 @@ func ParseCSV(filename string, data []byte) (model.ExchangeFixing, error) {
 	return result, nil
 }
 
-func GetFXMainUnprocessedFiles(storage *localfs.PlaintextStorage) ([]string, error) {
+func GetFXMainUnprocessedFiles(storage localfs.Storage) ([]string, error) {
 	raw, err := storage.ListDirectory(FXMainOfflineDirectory(), true)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func GetFXMainUnprocessedFiles(storage *localfs.PlaintextStorage) ([]string, err
 	return difference(raw, processed), nil
 }
 
-func GetFXOtherUnprocessedFiles(storage *localfs.PlaintextStorage) ([]string, error) {
+func GetFXOtherUnprocessedFiles(storage localfs.Storage) ([]string, error) {
 	raw, err := storage.ListDirectory(FXOtherOfflineDirectory(), true)
 	if err != nil {
 		return nil, err

@@ -35,14 +35,19 @@ import (
 type CNBRatesImport struct {
 	utils.DaemonSupport
 	cnbGateway string
-	storage    *localfs.PlaintextStorage
+	storage    localfs.Storage
 	metrics    *metrics.Metrics
 	httpClient Client
 }
 
 // NewCNBRatesImport returns cnb rates import fascade
-func NewCNBRatesImport(ctx context.Context, cfg config.Configuration, metrics *metrics.Metrics, storage *localfs.PlaintextStorage) CNBRatesImport {
-	return CNBRatesImport{
+func NewCNBRatesImport(ctx context.Context, cfg config.Configuration, metrics *metrics.Metrics) *CNBRatesImport {
+	storage, err := localfs.NewPlaintextStorage(cfg.RootStorage)
+	if err != nil {
+		log.Error().Msgf("Failed to ensure storage %+v", err)
+		return nil
+	}
+	return &CNBRatesImport{
 		DaemonSupport: utils.NewDaemonSupport(ctx, "import"),
 		storage:       storage,
 		cnbGateway:    cfg.CNBGateway,
@@ -51,7 +56,10 @@ func NewCNBRatesImport(ctx context.Context, cfg config.Configuration, metrics *m
 	}
 }
 
-func (cnb CNBRatesImport) syncMainRateToday(today time.Time) error {
+func (cnb *CNBRatesImport) syncMainRateToday(today time.Time) error {
+	if cnb == nil {
+		return nil
+	}
 	cachePath := utils.FXMainOfflinePath(today)
 	if ok, err := cnb.storage.Exists(cachePath); err != nil {
 		return err
@@ -82,7 +90,11 @@ func (cnb CNBRatesImport) syncMainRateToday(today time.Time) error {
 	return nil
 }
 
-func (cnb CNBRatesImport) syncOtherRates(day time.Time) error {
+func (cnb *CNBRatesImport) syncOtherRates(day time.Time) error {
+	if cnb == nil {
+		return nil
+	}
+
 	cachePath := utils.FXOtherOfflinePath(day)
 	if ok, err := cnb.storage.Exists(cachePath); err != nil {
 		return fmt.Errorf("corrupted cache at %s with %+v", cachePath, err)
@@ -109,7 +121,11 @@ func (cnb CNBRatesImport) syncOtherRates(day time.Time) error {
 	return nil
 }
 
-func (cnb CNBRatesImport) syncMainRates(days []time.Time) error {
+func (cnb *CNBRatesImport) syncMainRates(days []time.Time) error {
+	if cnb == nil {
+		return nil
+	}
+
 	if len(days) == 0 {
 		return nil
 	}
@@ -223,7 +239,11 @@ func validateRates(date time.Time, data []byte) bool {
 	return date.Year() == expected.Year() && date.Month() == expected.Month() && date.Day() == expected.Day()
 }
 
-func (cnb CNBRatesImport) importRoundtrip() {
+func (cnb *CNBRatesImport) importRoundtrip() {
+	if cnb == nil {
+		return
+	}
+
 	now := time.Now()
 
 	if err := cnb.syncMainRateToday(now); err != nil {
@@ -272,7 +292,11 @@ func (cnb CNBRatesImport) importRoundtrip() {
 }
 
 // Start handles everything needed to start cnb rates import daemon
-func (cnb CNBRatesImport) Start() {
+func (cnb *CNBRatesImport) Start() {
+	if cnb == nil {
+		return
+	}
+
 	cnb.MarkReady()
 
 	select {

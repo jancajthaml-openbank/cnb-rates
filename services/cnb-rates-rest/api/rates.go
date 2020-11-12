@@ -17,16 +17,14 @@ package api
 import (
 	"fmt"
 	"net/http"
-
+	"encoding/json"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/persistence"
-	"github.com/jancajthaml-openbank/cnb-rates-rest/utils"
-
 	localfs "github.com/jancajthaml-openbank/local-fs"
 	"github.com/labstack/echo/v4"
 )
 
 // GetRates return existing tokens of given curreny
-func GetRates(storage *localfs.PlaintextStorage) func(c echo.Context) error {
+func GetRates(storage localfs.Storage) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 
@@ -44,7 +42,7 @@ func GetRates(storage *localfs.PlaintextStorage) func(c echo.Context) error {
 		c.Response().WriteHeader(http.StatusOK)
 
 		for idx, rate := range rates {
-			chunk, err := utils.JSON.Marshal(rate)
+			chunk, err := json.Marshal(rate)
 			if err != nil {
 				return err
 			}

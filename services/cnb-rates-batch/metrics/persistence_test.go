@@ -17,14 +17,14 @@ func TestMarshalJSON(t *testing.T) {
 	{
 		var entity *Metrics
 		_, err := entity.MarshalJSON()
-		assert.EqualError(t, err, "cannot marshall nil")
+		assert.NotNil(t, err)
 	}
 
 	t.Log("error when values are nil")
 	{
 		entity := Metrics{}
 		_, err := entity.MarshalJSON()
-		assert.EqualError(t, err, "cannot marshall nil references")
+		assert.NotNil(t, err)
 	}
 
 	t.Log("happy path")
@@ -53,14 +53,14 @@ func TestUnmarshalJSON(t *testing.T) {
 	{
 		var entity *Metrics
 		err := entity.UnmarshalJSON([]byte(""))
-		assert.EqualError(t, err, "cannot unmarshall to nil")
+		assert.NotNil(t, err)
 	}
 
 	t.Log("error when values are nil")
 	{
 		entity := Metrics{}
 		err := entity.UnmarshalJSON([]byte(""))
-		assert.EqualError(t, err, "cannot unmarshall to nil references")
+		assert.NotNil(t, err)
 	}
 
 	t.Log("error on malformed data")
@@ -94,21 +94,23 @@ func TestPersist(t *testing.T) {
 	t.Log("error when caller is nil")
 	{
 		var entity *Metrics
-		assert.EqualError(t, entity.Persist(), "cannot persist nil reference")
+		assert.NotNil(t, entity.Persist())
 	}
 
 	t.Log("error when marshaling fails")
 	{
 		entity := Metrics{}
-		assert.EqualError(t, entity.Persist(), "cannot marshall nil references")
+		assert.NotNil(t, entity.Persist())
 	}
 
 	t.Log("happy path")
 	{
 		defer os.Remove("/tmp/metrics.batch.json")
 
+		storage, _ := localfs.NewPlaintextStorage("/tmp")
+
 		entity := Metrics{
-			storage:         localfs.NewPlaintextStorage("/tmp"),
+			storage:         storage,
 			daysProcessed:   metrics.NewCounter(),
 			monthsProcessed: metrics.NewCounter(),
 		}
@@ -130,7 +132,7 @@ func TestHydrate(t *testing.T) {
 	t.Log("error when caller is nil")
 	{
 		var entity *Metrics
-		assert.EqualError(t, entity.Hydrate(), "cannot hydrate nil reference")
+		assert.NotNil(t, entity.Hydrate())
 	}
 
 	t.Log("happy path")
@@ -150,8 +152,10 @@ func TestHydrate(t *testing.T) {
 
 		require.Nil(t, ioutil.WriteFile("/tmp/metrics.batch.json", data, 0444))
 
+		storage, _ := localfs.NewPlaintextStorage("/tmp")
+
 		entity := Metrics{
-			storage:         localfs.NewPlaintextStorage("/tmp"),
+			storage:         storage,
 			daysProcessed:   metrics.NewCounter(),
 			monthsProcessed: metrics.NewCounter(),
 		}
