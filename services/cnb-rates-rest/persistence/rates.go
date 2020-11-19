@@ -16,20 +16,10 @@ package persistence
 
 import (
 	localfs "github.com/jancajthaml-openbank/local-fs"
-
-	"github.com/jancajthaml-openbank/cnb-rates-rest/utils"
 )
 
 // LoadRates rehydrates rates entities state from storage
 func LoadRates(storage localfs.Storage, tenant string) ([]string, error) {
-	path := utils.TokensPath(tenant)
-	ok, err := storage.Exists(path)
-	if err != nil || !ok {
-		return make([]string, 0), nil
-	}
-	tokens, err := storage.ListDirectory(path, true)
-	if err != nil {
-		return nil, err
-	}
-	return tokens, nil
+	// FIXME implement actual
+	return nil, nil
 }

@@ -15,9 +15,9 @@
 package api
 
 import (
-	"fmt"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -33,7 +33,7 @@ import (
 // lifecycle api of http
 type Server struct {
 	utils.DaemonSupport
-	underlying    *http.Server
+	underlying *http.Server
 }
 
 type tcpKeepAliveListener struct {
