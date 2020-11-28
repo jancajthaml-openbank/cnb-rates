@@ -14,8 +14,6 @@
 
 package boot
 
-import (
-	"github.com/jancajthaml-openbank/cnb-rates-rest/logging"
-)
+import "github.com/jancajthaml-openbank/cnb-rates-rest/support/logging"
 
 var log = logging.New("boot")

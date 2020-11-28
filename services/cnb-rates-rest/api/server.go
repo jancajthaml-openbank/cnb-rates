@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-rest/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-rest/support/concurrent"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 
@@ -32,7 +32,7 @@ import (
 // Server is a fascade for http-server following handler api of Gin and
 // lifecycle api of http
 type Server struct {
-	utils.DaemonSupport
+	concurrent.DaemonSupport
 	underlying *http.Server
 }
 
@@ -62,7 +62,7 @@ func NewServer(ctx context.Context, port int, certPath string, keyPath string, r
 	router.GET("/rates/:currency", GetRates(storage))
 
 	return &Server{
-		DaemonSupport: utils.NewDaemonSupport(ctx, "http-server"),
+		DaemonSupport: concurrent.NewDaemonSupport(ctx, "http-server"),
 		underlying: &http.Server{
 			Addr:         fmt.Sprintf("127.0.0.1:%d", port),
 			ReadTimeout:  15 * time.Second,
@@ -78,7 +78,7 @@ func NewServer(ctx context.Context, port int, certPath string, keyPath string, r
 					tls.CurveP384,
 					tls.CurveP256,
 				},
-				CipherSuites: utils.CipherSuites,
+				CipherSuites: CipherSuites,
 				Certificates: []tls.Certificate{
 					certificate,
 				},

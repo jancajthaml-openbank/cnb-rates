@@ -20,24 +20,24 @@ import (
 
 	"github.com/jancajthaml-openbank/cnb-rates-import/config"
 	"github.com/jancajthaml-openbank/cnb-rates-import/integration"
-	"github.com/jancajthaml-openbank/cnb-rates-import/logging"
+	"github.com/jancajthaml-openbank/cnb-rates-import/support/logging"
 	"github.com/jancajthaml-openbank/cnb-rates-import/metrics"
-	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-import/support/concurrent"
 )
 
 // Program encapsulate initialized application
 type Program struct {
 	interrupt chan os.Signal
 	cfg       config.Configuration
-	daemons   []utils.Daemon
+	daemons   []concurrent.Daemon
 	cancel    context.CancelFunc
 }
 
-// Initialize application
-func Initialize() Program {
+// NewProgram returns new program
+func NewProgram() Program {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cfg := config.GetConfig()
+	cfg := config.LoadConfig()
 
 	logging.SetupLogger(cfg.LogLevel)
 
@@ -52,7 +52,7 @@ func Initialize() Program {
 		metricsDaemon,
 	)
 
-	var daemons = make([]utils.Daemon, 0)
+	var daemons = make([]concurrent.Daemon, 0)
 	daemons = append(daemons, metricsDaemon)
 	daemons = append(daemons, cnbDaemon)
 

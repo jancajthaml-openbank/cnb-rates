@@ -27,13 +27,15 @@ import (
 	"github.com/jancajthaml-openbank/cnb-rates-import/config"
 	"github.com/jancajthaml-openbank/cnb-rates-import/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-import/support/timeshift"
+	"github.com/jancajthaml-openbank/cnb-rates-import/support/concurrent"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 )
 
 // CNBRatesImport represents cnb gateway rates import subroutine
 type CNBRatesImport struct {
-	utils.DaemonSupport
+	concurrent.DaemonSupport
 	cnbGateway string
 	storage    localfs.Storage
 	metrics    *metrics.Metrics
@@ -48,7 +50,7 @@ func NewCNBRatesImport(ctx context.Context, cfg config.Configuration, metrics *m
 		return nil
 	}
 	return &CNBRatesImport{
-		DaemonSupport: utils.NewDaemonSupport(ctx, "import"),
+		DaemonSupport: concurrent.NewDaemonSupport(ctx, "import"),
 		storage:       storage,
 		cnbGateway:    cfg.CNBGateway,
 		metrics:       metrics,
@@ -255,7 +257,7 @@ func (cnb *CNBRatesImport) importRoundtrip() {
 	today := now.AddDate(0, 0, -1)
 	yesterday := today.AddDate(0, 0, -1)
 
-	months := utils.GetMonthsBetween(fxMainHistoryStart, today)
+	months := timeshift.GetMonthsBetween(fxMainHistoryStart, today)
 	for _, month := range months {
 		if cnb.IsCanceled() {
 			return
@@ -267,9 +269,9 @@ func (cnb *CNBRatesImport) importRoundtrip() {
 
 		var days []time.Time
 		if nextMonth.After(yesterday) {
-			days = utils.GetDatesBetween(currentMonth, yesterday)
+			days = timeshift.GetDatesBetween(currentMonth, yesterday)
 		} else {
-			days = utils.GetDatesBetween(currentMonth, nextMonth)
+			days = timeshift.GetDatesBetween(currentMonth, nextMonth)
 		}
 
 		if len(days) <= 2 {

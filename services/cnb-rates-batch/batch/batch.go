@@ -23,13 +23,14 @@ import (
 
 	"github.com/jancajthaml-openbank/cnb-rates-batch/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/support/concurrent"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 )
 
 // Batch represents batch subroutine
 type Batch struct {
-	utils.DaemonSupport
+	concurrent.DaemonSupport
 	storage localfs.Storage
 	metrics *metrics.Metrics
 }
@@ -42,7 +43,7 @@ func NewBatch(ctx context.Context, rootStorage string, metrics *metrics.Metrics)
 		return nil
 	}
 	return &Batch{
-		DaemonSupport: utils.NewDaemonSupport(ctx, "batch"),
+		DaemonSupport: concurrent.NewDaemonSupport(ctx, "batch"),
 		storage:       storage,
 		metrics:       metrics,
 	}

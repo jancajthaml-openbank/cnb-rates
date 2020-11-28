@@ -14,8 +14,6 @@
 
 package metrics
 
-import (
-	"github.com/jancajthaml-openbank/cnb-rates-import/logging"
-)
+import "github.com/jancajthaml-openbank/cnb-rates-import/support/logging"
 
 var log = logging.New("metrics")

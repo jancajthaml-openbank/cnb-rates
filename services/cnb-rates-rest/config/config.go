@@ -38,8 +38,8 @@ type Configuration struct {
 	MetricsOutput string
 }
 
-// GetConfig loads application configuration
-func GetConfig() Configuration {
+// LoadConfig loads application configuration
+func LoadConfig() Configuration {
 	logLevel := strings.ToUpper(envString("CNB_RATES_LOG_LEVEL", "DEBUG"))
 	serverKey := envString("CNB_RATES_SERVER_KEY", "")
 	serverCert := envString("CNB_RATES_SERVER_CERT", "")

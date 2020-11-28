@@ -20,24 +20,24 @@ import (
 
 	"github.com/jancajthaml-openbank/cnb-rates-batch/batch"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
-	"github.com/jancajthaml-openbank/cnb-rates-batch/logging"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/support/logging"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/metrics"
-	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/support/concurrent"
 )
 
 // Program encapsulate initialized application
 type Program struct {
 	interrupt chan os.Signal
 	cfg       config.Configuration
-	daemons   []utils.Daemon
+	daemons   []concurrent.Daemon
 	cancel    context.CancelFunc
 }
 
-// Initialize application
-func Initialize() Program {
+// NewProgram returns new program
+func NewProgram() Program {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cfg := config.GetConfig()
+	cfg := config.LoadConfig()
 
 	logging.SetupLogger(cfg.LogLevel)
 
@@ -52,7 +52,7 @@ func Initialize() Program {
 		metricsDaemon,
 	)
 
-	var daemons = make([]utils.Daemon, 0)
+	var daemons = make([]concurrent.Daemon, 0)
 	daemons = append(daemons, metricsDaemon)
 	daemons = append(daemons, batchDaemon)
 

@@ -37,8 +37,8 @@ type Configuration struct {
 	MetricsOutput string
 }
 
-// GetConfig loads application configuration
-func GetConfig() Configuration {
+// LoadConfig loads application configuration
+func LoadConfig() Configuration {
 	logLevel := strings.ToUpper(envString("CNB_RATES_LOG_LEVEL", "DEBUG"))
 	rootStorage := envString("CNB_RATES_STORAGE", "/data")
 	cnbGateway := envString("CNB_RATES_CNB_GATEWAY", "https://www.cnb.cz")
