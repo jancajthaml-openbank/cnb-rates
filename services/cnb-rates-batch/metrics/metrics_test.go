@@ -1,19 +1,14 @@
 package metrics
 
 import (
-	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestMetrics(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	entity := NewMetrics(ctx, "/tmp", time.Hour)
+	entity := NewMetrics("/tmp", false)
 
 	t.Log("DayProcessed properly increments number of processed days")
 	{

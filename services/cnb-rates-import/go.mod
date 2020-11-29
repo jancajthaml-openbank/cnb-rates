@@ -1,6 +1,6 @@
 module github.com/jancajthaml-openbank/cnb-rates-import
 
-go 1.14
+go 1.15
 
 require (
 	github.com/jancajthaml-openbank/local-fs v1.2.0

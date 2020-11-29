@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019, Jan Cajthaml <jan.cajthaml@gmail.com>
+// Copyright (c) 2016-2020, Jan Cajthaml <jan.cajthaml@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,8 +23,6 @@ import (
 	"net"
 	"net/http"
 	"time"
-
-	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
 )
 
 // Client represents fascade for http client
@@ -52,7 +50,7 @@ func NewClient() Client {
 						tls.CurveP384,
 						tls.CurveP256,
 					},
-					CipherSuites: utils.CipherSuites,
+					CipherSuites: CipherSuites,
 				},
 			},
 		},

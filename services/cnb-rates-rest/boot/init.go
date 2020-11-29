@@ -15,53 +15,60 @@
 package boot
 
 import (
-	"context"
 	"os"
 
 	"github.com/jancajthaml-openbank/cnb-rates-rest/api"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/config"
-	"github.com/jancajthaml-openbank/cnb-rates-rest/logging"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/metrics"
-	"github.com/jancajthaml-openbank/cnb-rates-rest/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-rest/support/concurrent"
+	"github.com/jancajthaml-openbank/cnb-rates-rest/support/logging"
 )
 
-// Program encapsulate initialized application
+// Program encapsulate program
 type Program struct {
 	interrupt chan os.Signal
 	cfg       config.Configuration
-	daemons   []utils.Daemon
-	cancel    context.CancelFunc
+	pool      concurrent.DaemonPool
 }
 
-// Initialize application
-func Initialize() Program {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	cfg := config.GetConfig()
-
-	logging.SetupLogger(cfg.LogLevel)
-
-	metricsDaemon := metrics.NewMetrics(
-		ctx,
-		cfg.MetricsOutput,
-		cfg.MetricsRefreshRate,
-	)
-	restDaemon := api.NewServer(
-		ctx,
-		cfg.ServerPort,
-		cfg.ServerCert,
-		cfg.ServerKey,
-		cfg.RootStorage,
-	)
-
-	var daemons = make([]utils.Daemon, 0)
-	daemons = append(daemons, metricsDaemon)
-	daemons = append(daemons, restDaemon)
-
+// NewProgram returns new program
+func NewProgram() Program {
 	return Program{
 		interrupt: make(chan os.Signal, 1),
-		cfg:       cfg,
-		daemons:   daemons,
-		cancel:    cancel,
+		cfg:       config.LoadConfig(),
+		pool:      concurrent.NewDaemonPool("program"),
 	}
+}
+
+// Setup setups program
+func (prog *Program) Setup() {
+	if prog == nil {
+		return
+	}
+
+	logging.SetupLogger(prog.cfg.LogLevel)
+
+	metricsWorker := metrics.NewMetrics(
+		prog.cfg.MetricsOutput,
+		prog.cfg.MetricsContinuous,
+	)
+
+	restWorker := api.NewServer(
+		prog.cfg.ServerPort,
+		prog.cfg.ServerCert,
+		prog.cfg.ServerKey,
+		prog.cfg.RootStorage,
+	)
+
+	prog.pool.Register(concurrent.NewScheduledDaemon(
+		"metrics",
+		metricsWorker,
+		prog.cfg.MetricsRefreshRate,
+	))
+
+	prog.pool.Register(concurrent.NewOneShotDaemon(
+		"rest",
+		restWorker,
+	))
+
 }

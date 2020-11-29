@@ -15,15 +15,15 @@
 package api
 
 import (
-	"fmt"
-	"net/http"
 	"encoding/json"
+	"fmt"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/persistence"
 	localfs "github.com/jancajthaml-openbank/local-fs"
 	"github.com/labstack/echo/v4"
+	"net/http"
 )
 
-// GetRates return existing tokens of given curreny
+// GetRates return existing tokens of given currency
 func GetRates(storage localfs.Storage) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package timeshift
 
 import "time"
 
@@ -34,6 +34,7 @@ func GetDatesForYear(year string) []time.Time {
 			}
 		}
 	}
+
 	return dates
 }
 
@@ -47,7 +48,8 @@ func GetMonthsBetween(startDate time.Time, endDate time.Time) []time.Time {
 
 func GetDatesBetween(startDate time.Time, endDate time.Time) []time.Time {
 	dates := make([]time.Time, 0)
-	for ; startDate.Before(endDate); startDate = startDate.AddDate(0, 0, 1) {
+
+	for ; !startDate.After(endDate); startDate = startDate.AddDate(0, 0, 1) {
 		switch startDate.Weekday() {
 		case time.Sunday, time.Saturday:
 			continue
@@ -55,5 +57,6 @@ func GetDatesBetween(startDate time.Time, endDate time.Time) []time.Time {
 			dates = append(dates, startDate)
 		}
 	}
+
 	return dates
 }

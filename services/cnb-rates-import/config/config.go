@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019, Jan Cajthaml <jan.cajthaml@gmail.com>
+// Copyright (c) 2016-2020, Jan Cajthaml <jan.cajthaml@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,11 +15,8 @@
 package config
 
 import (
-	"os"
 	"strings"
 	"time"
-
-	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
 )
 
 // Configuration of application
@@ -30,6 +27,8 @@ type Configuration struct {
 	RootStorage string
 	// LogLevel ignorecase log level
 	LogLevel string
+	// MetricsContinuous determines if metrics should start from last state
+	MetricsContinuous bool
 	// MetricsRefreshRate represents interval in which in memory metrics should be
 	// persisted to disk
 	MetricsRefreshRate time.Duration
@@ -37,34 +36,14 @@ type Configuration struct {
 	MetricsOutput string
 }
 
-// GetConfig loads application configuration
-func GetConfig() Configuration {
-	logLevel := strings.ToUpper(envString("CNB_RATES_LOG_LEVEL", "DEBUG"))
-	rootStorage := envString("CNB_RATES_STORAGE", "/data")
-	cnbGateway := envString("CNB_RATES_CNB_GATEWAY", "https://www.cnb.cz")
-	metricsOutput := envFilename("CNB_RATES_METRICS_OUTPUT", "/tmp")
-	metricsRefreshRate := envDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
-
-	if rootStorage == "" {
-		log.Error().Msg("missing required parameter to run")
-		panic("missing required parameter to run")
-	}
-
-	if os.MkdirAll(rootStorage+"/rates/cnb/"+utils.FXMainOfflineDirectory(), os.ModePerm) != nil {
-		log.Error().Msg("unable to assert daily offline directory")
-		panic("unable to assert daily offline directory")
-	}
-
-	if os.MkdirAll(rootStorage+"/rates/cnb/"+utils.FXOtherOfflineDirectory(), os.ModePerm) != nil {
-		log.Error().Msg("unable to assert monthly offline directory")
-		panic("unable to assert monthly offline directory")
-	}
-
+// LoadConfig loads application configuration
+func LoadConfig() Configuration {
 	return Configuration{
-		RootStorage:        rootStorage + "/rates/cnb",
-		CNBGateway:         cnbGateway,
-		LogLevel:           logLevel,
-		MetricsRefreshRate: metricsRefreshRate,
-		MetricsOutput:      metricsOutput,
+		RootStorage:        envString("CNB_RATES_STORAGE", "/data") + "/rates/cnb",
+		CNBGateway:         envString("CNB_RATES_CNB_GATEWAY", "https://www.cnb.cz"),
+		LogLevel:           strings.ToUpper(envString("CNB_RATES_LOG_LEVEL", "DEBUG")),
+		MetricsContinuous:  envBoolean("CNB_RATES_METRICS_CONTINUOUS", true),
+		MetricsRefreshRate: envDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second),
+		MetricsOutput:      envFilename("CNB_RATES_METRICS_OUTPUT", "/tmp/cnb-rates-import-metrics"),
 	}
 }

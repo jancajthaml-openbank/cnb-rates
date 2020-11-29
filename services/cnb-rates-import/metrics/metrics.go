@@ -15,19 +15,14 @@
 package metrics
 
 import (
-	"context"
-	"time"
-
-	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
 	localfs "github.com/jancajthaml-openbank/local-fs"
 	metrics "github.com/rcrowley/go-metrics"
 )
 
 // Metrics holds metrics counters
 type Metrics struct {
-	utils.DaemonSupport
 	storage        localfs.Storage
-	refreshRate    time.Duration
+	continuous     bool
 	daysImported   metrics.Counter
 	monthsImported metrics.Counter
 	gatewayLatency metrics.Timer
@@ -35,16 +30,15 @@ type Metrics struct {
 }
 
 // NewMetrics returns blank metrics holder
-func NewMetrics(ctx context.Context, output string, refreshRate time.Duration) *Metrics {
+func NewMetrics(output string, continuous bool) *Metrics {
 	storage, err := localfs.NewPlaintextStorage(output)
 	if err != nil {
 		log.Error().Msgf("Failed to ensure storage %+v", err)
 		return nil
 	}
 	return &Metrics{
-		DaemonSupport:  utils.NewDaemonSupport(ctx, "metrics"),
 		storage:        storage,
-		refreshRate:    refreshRate,
+		continuous:     continuous,
 		daysImported:   metrics.NewCounter(),
 		monthsImported: metrics.NewCounter(),
 		gatewayLatency: metrics.NewTimer(),
@@ -84,45 +78,29 @@ func (metrics *Metrics) MonthImported() {
 	metrics.monthsImported.Inc(1)
 }
 
-// Start handles everything needed to start metrics daemon
-func (metrics *Metrics) Start() {
+// Setup hydrates metrics from storage
+func (metrics *Metrics) Setup() error {
 	if metrics == nil {
-		return
+		return nil
 	}
-
-	ticker := time.NewTicker(metrics.refreshRate)
-	defer ticker.Stop()
-
-	if err := metrics.Hydrate(); err != nil {
-		log.Warn().Msg(err.Error())
+	if metrics.continuous {
+		metrics.Hydrate()
 	}
+	return nil
+}
 
+// Done returns always finished
+func (metrics *Metrics) Done() <-chan interface{} {
+	done := make(chan interface{})
+	close(done)
+	return done
+}
+
+// Cancel does nothing
+func (metrics *Metrics) Cancel() {
+}
+
+// Work represents metrics worker work
+func (metrics *Metrics) Work() {
 	metrics.Persist()
-	metrics.MarkReady()
-
-	select {
-	case <-metrics.CanStart:
-		break
-	case <-metrics.Done():
-		metrics.MarkDone()
-		return
-	}
-
-	log.Info().Msgf("Start metrics daemon, update file each %v", metrics.refreshRate)
-
-	go func() {
-		for {
-			select {
-			case <-metrics.Done():
-				metrics.Persist()
-				metrics.MarkDone()
-				return
-			case <-ticker.C:
-				metrics.Persist()
-			}
-		}
-	}()
-
-	metrics.WaitStop()
-	log.Info().Msg("Stop metrics daemon")
 }

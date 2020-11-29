@@ -15,51 +15,61 @@
 package boot
 
 import (
-	"context"
 	"os"
+	"time"
 
 	"github.com/jancajthaml-openbank/cnb-rates-import/config"
 	"github.com/jancajthaml-openbank/cnb-rates-import/integration"
-	"github.com/jancajthaml-openbank/cnb-rates-import/logging"
 	"github.com/jancajthaml-openbank/cnb-rates-import/metrics"
-	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-import/support/concurrent"
+	"github.com/jancajthaml-openbank/cnb-rates-import/support/logging"
 )
 
-// Program encapsulate initialized application
+// Program encapsulate program
 type Program struct {
 	interrupt chan os.Signal
 	cfg       config.Configuration
-	daemons   []utils.Daemon
-	cancel    context.CancelFunc
+	pool      concurrent.DaemonPool
 }
 
-// Initialize application
-func Initialize() Program {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	cfg := config.GetConfig()
-
-	logging.SetupLogger(cfg.LogLevel)
-
-	metricsDaemon := metrics.NewMetrics(
-		ctx,
-		cfg.MetricsOutput,
-		cfg.MetricsRefreshRate,
-	)
-	cnbDaemon := integration.NewCNBRatesImport(
-		ctx,
-		cfg,
-		metricsDaemon,
-	)
-
-	var daemons = make([]utils.Daemon, 0)
-	daemons = append(daemons, metricsDaemon)
-	daemons = append(daemons, cnbDaemon)
-
+// NewProgram returns new program
+func NewProgram() Program {
 	return Program{
 		interrupt: make(chan os.Signal, 1),
-		cfg:       cfg,
-		daemons:   daemons,
-		cancel:    cancel,
+		cfg:       config.LoadConfig(),
+		pool:      concurrent.NewDaemonPool("program"),
 	}
+}
+
+// Setup setups program
+func (prog *Program) Setup() {
+	if prog == nil {
+		return
+	}
+
+	logging.SetupLogger(prog.cfg.LogLevel)
+
+	metricsWorker := metrics.NewMetrics(
+		prog.cfg.MetricsOutput,
+		prog.cfg.MetricsContinuous,
+	)
+
+	cnbWorker := integration.NewCNBRatesImport(
+		prog.cfg.CNBGateway,
+		prog.cfg.RootStorage,
+		metricsWorker,
+	)
+
+	prog.pool.Register(concurrent.NewScheduledDaemon(
+		"metrics",
+		metricsWorker,
+		prog.cfg.MetricsRefreshRate,
+	))
+
+	prog.pool.Register(concurrent.NewScheduledDaemon(
+		"cnb",
+		cnbWorker,
+		time.Second,
+	))
+
 }

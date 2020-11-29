@@ -14,8 +14,6 @@
 
 package config
 
-import (
-	"github.com/jancajthaml-openbank/cnb-rates-batch/logging"
-)
+import "github.com/jancajthaml-openbank/cnb-rates-batch/support/logging"
 
 var log = logging.New("config")

@@ -15,51 +15,58 @@
 package boot
 
 import (
-	"context"
 	"os"
 
 	"github.com/jancajthaml-openbank/cnb-rates-batch/batch"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
-	"github.com/jancajthaml-openbank/cnb-rates-batch/logging"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/metrics"
-	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/support/concurrent"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/support/logging"
 )
 
-// Program encapsulate initialized application
+// Program encapsulate program
 type Program struct {
 	interrupt chan os.Signal
 	cfg       config.Configuration
-	daemons   []utils.Daemon
-	cancel    context.CancelFunc
+	pool      concurrent.DaemonPool
 }
 
-// Initialize application
-func Initialize() Program {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	cfg := config.GetConfig()
-
-	logging.SetupLogger(cfg.LogLevel)
-
-	metricsDaemon := metrics.NewMetrics(
-		ctx,
-		cfg.MetricsOutput,
-		cfg.MetricsRefreshRate,
-	)
-	batchDaemon := batch.NewBatch(
-		ctx,
-		cfg.RootStorage,
-		metricsDaemon,
-	)
-
-	var daemons = make([]utils.Daemon, 0)
-	daemons = append(daemons, metricsDaemon)
-	daemons = append(daemons, batchDaemon)
-
+// NewProgram returns new program
+func NewProgram() Program {
 	return Program{
 		interrupt: make(chan os.Signal, 1),
-		cfg:       cfg,
-		daemons:   daemons,
-		cancel:    cancel,
+		cfg:       config.LoadConfig(),
+		pool:      concurrent.NewDaemonPool("program"),
 	}
+}
+
+// Setup setups program
+func (prog *Program) Setup() {
+	if prog == nil {
+		return
+	}
+
+	logging.SetupLogger(prog.cfg.LogLevel)
+
+	metricsWorker := metrics.NewMetrics(
+		prog.cfg.MetricsOutput,
+		prog.cfg.MetricsContinuous,
+	)
+
+	batchWorker := batch.NewBatch(
+		prog.cfg.RootStorage,
+		metricsWorker,
+	)
+
+	prog.pool.Register(concurrent.NewScheduledDaemon(
+		"metrics",
+		metricsWorker,
+		prog.cfg.MetricsRefreshRate,
+	))
+
+	prog.pool.Register(concurrent.NewOneShotDaemon(
+		"batch",
+		batchWorker,
+	))
+
 }
