@@ -17,46 +17,46 @@ package timeshift
 import "time"
 
 func GetDatesForYear(year string) []time.Time {
-  date, err := time.Parse("2006", year)
-  if err != nil {
-    return nil
-  }
-  dates := make([]time.Time, 0)
-  for i := 1; i < 13; i++ {
-    startDate := time.Date(date.Year(), time.Month(i), 1, 0, 0, 0, 0, time.UTC)
-    endDate := startDate.AddDate(0, 1, 0).Add(time.Nanosecond * -1)
-    for ; startDate.Before(endDate); startDate = startDate.AddDate(0, 0, 1) {
-      switch startDate.Weekday() {
-      case time.Sunday, time.Saturday:
-        continue
-      default:
-        dates = append(dates, startDate)
-      }
-    }
-  }
+	date, err := time.Parse("2006", year)
+	if err != nil {
+		return nil
+	}
+	dates := make([]time.Time, 0)
+	for i := 1; i < 13; i++ {
+		startDate := time.Date(date.Year(), time.Month(i), 1, 0, 0, 0, 0, time.UTC)
+		endDate := startDate.AddDate(0, 1, 0).Add(time.Nanosecond * -1)
+		for ; startDate.Before(endDate); startDate = startDate.AddDate(0, 0, 1) {
+			switch startDate.Weekday() {
+			case time.Sunday, time.Saturday:
+				continue
+			default:
+				dates = append(dates, startDate)
+			}
+		}
+	}
 
-  return dates
+	return dates
 }
 
 func GetMonthsBetween(startDate time.Time, endDate time.Time) []time.Time {
-  dates := make([]time.Time, 0)
-  for ; startDate.Before(endDate); startDate = startDate.AddDate(0, 1, 0) {
-    dates = append(dates, startDate.AddDate(0, 1, 0).Add(time.Nanosecond*-1))
-  }
-  return dates
+	dates := make([]time.Time, 0)
+	for ; startDate.Before(endDate); startDate = startDate.AddDate(0, 1, 0) {
+		dates = append(dates, startDate.AddDate(0, 1, 0).Add(time.Nanosecond*-1))
+	}
+	return dates
 }
 
 func GetDatesBetween(startDate time.Time, endDate time.Time) []time.Time {
-  dates := make([]time.Time, 0)
+	dates := make([]time.Time, 0)
 
-  for ; !startDate.After(endDate); startDate = startDate.AddDate(0, 0, 1) {
-    switch startDate.Weekday() {
-    case time.Sunday, time.Saturday:
-      continue
-    default:
-      dates = append(dates, startDate)
-    }
-  }
+	for ; !startDate.After(endDate); startDate = startDate.AddDate(0, 0, 1) {
+		switch startDate.Weekday() {
+		case time.Sunday, time.Saturday:
+			continue
+		default:
+			dates = append(dates, startDate)
+		}
+	}
 
-  return dates
+	return dates
 }

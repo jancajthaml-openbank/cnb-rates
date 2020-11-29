@@ -38,8 +38,8 @@ func NewBatch(rootStorage string, metrics *metrics.Metrics) *Batch {
 		return nil
 	}
 	return &Batch{
-		storage:       storage,
-		metrics:       metrics,
+		storage: storage,
+		metrics: metrics,
 	}
 }
 
@@ -129,7 +129,6 @@ func (batch *Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
 	return nil
 }
 
-
 // Setup hydrates metrics from storage
 func (batch *Batch) Setup() error {
 	return nil
@@ -163,6 +162,5 @@ func (batch *Batch) Work() {
 	go batch.ProcessNewFXOther(&wg)
 
 	wg.Wait()
-
 
 }

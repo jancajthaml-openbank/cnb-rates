@@ -45,10 +45,10 @@ func NewCNBRatesImport(gateway string, rootStorage string, metrics *metrics.Metr
 		return nil
 	}
 	return &CNBRatesImport{
-		storage:       storage,
-		cnbGateway:    gateway,
-		metrics:       metrics,
-		httpClient:    NewClient(),
+		storage:    storage,
+		cnbGateway: gateway,
+		metrics:    metrics,
+		httpClient: NewClient(),
 	}
 }
 
@@ -255,7 +255,7 @@ func (cnb *CNBRatesImport) importRoundtrip() {
 	for _, month := range months {
 		// FIXME context cancel check
 		//if cnb.IsCanceled() {
-			//return
+		//return
 		//}
 
 		currentMonth := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, time.UTC)
