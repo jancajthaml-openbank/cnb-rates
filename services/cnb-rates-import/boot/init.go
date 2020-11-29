@@ -15,51 +15,69 @@
 package boot
 
 import (
-	"context"
+	"time"
 	"os"
 
 	"github.com/jancajthaml-openbank/cnb-rates-import/config"
-	"github.com/jancajthaml-openbank/cnb-rates-import/integration"
-	"github.com/jancajthaml-openbank/cnb-rates-import/support/logging"
 	"github.com/jancajthaml-openbank/cnb-rates-import/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-import/support/concurrent"
+	"github.com/jancajthaml-openbank/cnb-rates-import/support/logging"
+	"github.com/jancajthaml-openbank/cnb-rates-import/integration"
 )
 
-// Program encapsulate initialized application
+// Program encapsulate program
 type Program struct {
 	interrupt chan os.Signal
 	cfg       config.Configuration
 	daemons   []concurrent.Daemon
-	cancel    context.CancelFunc
+}
+
+// Register daemon into program
+func (prog *Program) Register(daemon concurrent.Daemon) {
+	if prog == nil || daemon == nil {
+		return
+	}
+	prog.daemons = append(prog.daemons, daemon)
 }
 
 // NewProgram returns new program
 func NewProgram() Program {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	cfg := config.LoadConfig()
-
-	logging.SetupLogger(cfg.LogLevel)
-
-	metricsDaemon := metrics.NewMetrics(
-		ctx,
-		cfg.MetricsOutput,
-		cfg.MetricsRefreshRate,
-	)
-	cnbDaemon := integration.NewCNBRatesImport(
-		ctx,
-		cfg,
-		metricsDaemon,
-	)
-
-	var daemons = make([]concurrent.Daemon, 0)
-	daemons = append(daemons, metricsDaemon)
-	daemons = append(daemons, cnbDaemon)
-
 	return Program{
 		interrupt: make(chan os.Signal, 1),
-		cfg:       cfg,
-		daemons:   daemons,
-		cancel:    cancel,
+		cfg:       config.LoadConfig(),
+		daemons:   make([]concurrent.Daemon, 0),
 	}
+}
+
+// Setup setups program
+func (prog *Program) Setup() {
+	if prog == nil {
+		return
+	}
+
+	logging.SetupLogger(prog.cfg.LogLevel)
+
+	metricsWorker := metrics.NewMetrics(
+		prog.cfg.MetricsOutput,
+		prog.cfg.MetricsContinuous,
+	)
+
+	cnbWorker := integration.NewCNBRatesImport(
+		prog.cfg.CNBGateway,
+		prog.cfg.RootStorage,
+		metricsWorker,
+	)
+
+	prog.Register(concurrent.NewScheduledDaemon(
+		"metrics",
+		metricsWorker,
+		prog.cfg.MetricsRefreshRate,
+	))
+
+	prog.Register(concurrent.NewScheduledDaemon(
+		"cnb",
+		cnbWorker,
+		time.Second,
+	))
+
 }

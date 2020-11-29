@@ -15,51 +15,66 @@
 package boot
 
 import (
-	"context"
 	"os"
 
-	"github.com/jancajthaml-openbank/cnb-rates-batch/batch"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
-	"github.com/jancajthaml-openbank/cnb-rates-batch/support/logging"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/metrics"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/batch"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/support/concurrent"
+	"github.com/jancajthaml-openbank/cnb-rates-batch/support/logging"
 )
 
-// Program encapsulate initialized application
+// Program encapsulate program
 type Program struct {
 	interrupt chan os.Signal
 	cfg       config.Configuration
 	daemons   []concurrent.Daemon
-	cancel    context.CancelFunc
+}
+
+// Register daemon into program
+func (prog *Program) Register(daemon concurrent.Daemon) {
+	if prog == nil || daemon == nil {
+		return
+	}
+	prog.daemons = append(prog.daemons, daemon)
 }
 
 // NewProgram returns new program
 func NewProgram() Program {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	cfg := config.LoadConfig()
-
-	logging.SetupLogger(cfg.LogLevel)
-
-	metricsDaemon := metrics.NewMetrics(
-		ctx,
-		cfg.MetricsOutput,
-		cfg.MetricsRefreshRate,
-	)
-	batchDaemon := batch.NewBatch(
-		ctx,
-		cfg.RootStorage,
-		metricsDaemon,
-	)
-
-	var daemons = make([]concurrent.Daemon, 0)
-	daemons = append(daemons, metricsDaemon)
-	daemons = append(daemons, batchDaemon)
-
 	return Program{
 		interrupt: make(chan os.Signal, 1),
-		cfg:       cfg,
-		daemons:   daemons,
-		cancel:    cancel,
+		cfg:       config.LoadConfig(),
+		daemons:   make([]concurrent.Daemon, 0),
 	}
+}
+
+// Setup setups program
+func (prog *Program) Setup() {
+	if prog == nil {
+		return
+	}
+
+	logging.SetupLogger(prog.cfg.LogLevel)
+
+	metricsWorker := metrics.NewMetrics(
+		prog.cfg.MetricsOutput,
+		prog.cfg.MetricsContinuous,
+	)
+
+	batchWorker := batch.NewBatch(
+		prog.cfg.RootStorage,
+		metricsWorker,
+	)
+
+	prog.Register(concurrent.NewScheduledDaemon(
+		"metrics",
+		metricsWorker,
+		prog.cfg.MetricsRefreshRate,
+	))
+
+	prog.Register(concurrent.NewOneShotDaemon(
+		"batch",
+		batchWorker,
+	))
+
 }

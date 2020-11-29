@@ -16,7 +16,6 @@ package integration
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"runtime"
 	"strings"
@@ -24,18 +23,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-import/config"
 	"github.com/jancajthaml-openbank/cnb-rates-import/metrics"
-	"github.com/jancajthaml-openbank/cnb-rates-import/utils"
 	"github.com/jancajthaml-openbank/cnb-rates-import/support/timeshift"
-	"github.com/jancajthaml-openbank/cnb-rates-import/support/concurrent"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 )
 
 // CNBRatesImport represents cnb gateway rates import subroutine
 type CNBRatesImport struct {
-	concurrent.DaemonSupport
 	cnbGateway string
 	storage    localfs.Storage
 	metrics    *metrics.Metrics
@@ -43,16 +38,15 @@ type CNBRatesImport struct {
 }
 
 // NewCNBRatesImport returns cnb rates import fascade
-func NewCNBRatesImport(ctx context.Context, cfg config.Configuration, metrics *metrics.Metrics) *CNBRatesImport {
-	storage, err := localfs.NewPlaintextStorage(cfg.RootStorage)
+func NewCNBRatesImport(gateway string, rootStorage string, metrics *metrics.Metrics) *CNBRatesImport {
+	storage, err := localfs.NewPlaintextStorage(rootStorage)
 	if err != nil {
 		log.Error().Msgf("Failed to ensure storage %+v", err)
 		return nil
 	}
 	return &CNBRatesImport{
-		DaemonSupport: concurrent.NewDaemonSupport(ctx, "import"),
 		storage:       storage,
-		cnbGateway:    cfg.CNBGateway,
+		cnbGateway:    gateway,
 		metrics:       metrics,
 		httpClient:    NewClient(),
 	}
@@ -62,14 +56,14 @@ func (cnb *CNBRatesImport) syncMainRateToday(today time.Time) error {
 	if cnb == nil {
 		return nil
 	}
-	cachePath := utils.FXMainOfflinePath(today)
+	cachePath := FXMainOfflinePath(today)
 	if ok, err := cnb.storage.Exists(cachePath); err != nil {
 		return err
 	} else if ok {
 		return nil
 	}
 
-	uri := cnb.cnbGateway + utils.GetUrlForDateMainFx(today)
+	uri := cnb.cnbGateway + GetUrlForDateMainFx(today)
 	response, code, err := cnb.httpClient.Get(uri)
 	if code != 200 && err == nil {
 		return fmt.Errorf("sync Main Rates %+v CNB cloud error %d %+v", today, code, string(response))
@@ -97,14 +91,14 @@ func (cnb *CNBRatesImport) syncOtherRates(day time.Time) error {
 		return nil
 	}
 
-	cachePath := utils.FXOtherOfflinePath(day)
+	cachePath := FXOtherOfflinePath(day)
 	if ok, err := cnb.storage.Exists(cachePath); err != nil {
 		return fmt.Errorf("corrupted cache at %s with %+v", cachePath, err)
 	} else if ok {
 		return nil
 	}
 
-	uri := cnb.cnbGateway + utils.GetUrlForDateOtherFx(day)
+	uri := cnb.cnbGateway + GetUrlForDateOtherFx(day)
 	response, code, err := cnb.httpClient.Get(uri)
 	if code != 200 && err == nil {
 		return fmt.Errorf("sync Other Rates %+v cloud error %d %+v", day, code, string(response))
@@ -144,7 +138,7 @@ func (cnb *CNBRatesImport) syncMainRates(days []time.Time) error {
 					return
 				}
 
-				cachePath := utils.FXMainOfflinePath(date)
+				cachePath := FXMainOfflinePath(date)
 
 				ok, err := cnb.storage.Exists(cachePath)
 				if err != nil {
@@ -162,7 +156,7 @@ func (cnb *CNBRatesImport) syncMainRates(days []time.Time) error {
 					code     int
 				)
 
-				uri := cnb.cnbGateway + utils.GetUrlForDateMainFx(date)
+				uri := cnb.cnbGateway + GetUrlForDateMainFx(date)
 				response, code, err = cnb.httpClient.Get(uri)
 				if code != 200 && err == nil {
 					log.Warn().Msgf("sync Main Rates %+v CNB cloud error %d %+v", date, code, string(response))
@@ -192,7 +186,7 @@ func (cnb *CNBRatesImport) syncMainRates(days []time.Time) error {
 	}
 
 	for _, day := range days {
-		cachePath := utils.FXMainOfflinePath(day)
+		cachePath := FXMainOfflinePath(day)
 		ok, err := cnb.storage.Exists(cachePath)
 		if err != nil {
 			log.Warn().Msgf("corrupted cache at %s with %+v", cachePath, err)
@@ -259,9 +253,10 @@ func (cnb *CNBRatesImport) importRoundtrip() {
 
 	months := timeshift.GetMonthsBetween(fxMainHistoryStart, today)
 	for _, month := range months {
-		if cnb.IsCanceled() {
-			return
-		}
+		// FIXME context cancel check
+		//if cnb.IsCanceled() {
+			//return
+		//}
 
 		currentMonth := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, time.UTC)
 		nextMonth := time.Date(month.Year(), month.Month()+1, 0, 0, 0, 0, 0, time.UTC)
@@ -293,38 +288,20 @@ func (cnb *CNBRatesImport) importRoundtrip() {
 	}
 }
 
-// Start handles everything needed to start cnb rates import daemon
-func (cnb *CNBRatesImport) Start() {
-	if cnb == nil {
-		return
-	}
+func (cnb *CNBRatesImport) Setup() error {
+	return nil
+}
 
-	cnb.MarkReady()
+func (cnb *CNBRatesImport) Done() <-chan interface{} {
+	done := make(chan interface{})
+	close(done)
+	return done
+}
 
-	select {
-	case <-cnb.CanStart:
-		break
-	case <-cnb.Done():
-		cnb.MarkDone()
-		return
-	}
+func (cnb *CNBRatesImport) Cancel() {
+}
 
-	log.Info().Msgf("Start cnb-import daemon, sync %v now", cnb.cnbGateway)
-
+func (cnb *CNBRatesImport) Work() {
+	defer syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 	cnb.importRoundtrip()
-
-	go func() {
-		for {
-			select {
-			case <-cnb.Done():
-				cnb.MarkDone()
-				return
-			}
-		}
-	}()
-
-	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
-
-	cnb.WaitStop()
-	log.Info().Msg("Stop cnb-import daemon")
 }

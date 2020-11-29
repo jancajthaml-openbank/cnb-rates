@@ -12,30 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package integration
 
 import "time"
 
 func GetUrlForDateMainFx(date time.Time) string {
-	return "/en/financial_markets/foreign_exchange_market/exchange_rate_fixing/daily.txt?date=" + date.Format("02+01+2006")
+  return "/en/financial_markets/foreign_exchange_market/exchange_rate_fixing/daily.txt?date=" + date.Format("02+01+2006")
 }
 
 func GetUrlForDateOtherFx(date time.Time) string {
-	return "/en/financial_markets/foreign_exchange_market/other_currencies_fx_rates/fx_rates.txt?month=" + date.Format("1") + "&year=" + date.Format("2006")
+  return "/en/financial_markets/foreign_exchange_market/other_currencies_fx_rates/fx_rates.txt?month=" + date.Format("1") + "&year=" + date.Format("2006")
 }
 
 func FXMainOfflineDirectory() string {
-	return "raw/fx-main"
+  return "raw/fx-main"
 }
 
 func FXOtherOfflineDirectory() string {
-	return "raw/fx-other"
+  return "raw/fx-other"
 }
 
 func FXMainOfflinePath(date time.Time) string {
-	return FXMainOfflineDirectory() + "/" + date.Format("02.01.2006")
+  return FXMainOfflineDirectory() + "/" + date.Format("02.01.2006")
 }
 
 func FXOtherOfflinePath(date time.Time) string {
-	return FXOtherOfflineDirectory() + "/" + date.Format("02.01.2006")
+  return FXOtherOfflineDirectory() + "/" + date.Format("02.01.2006")
 }

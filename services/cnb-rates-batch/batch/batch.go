@@ -15,67 +15,31 @@
 package batch
 
 import (
-	"context"
-	"fmt"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/jancajthaml-openbank/cnb-rates-batch/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
-	"github.com/jancajthaml-openbank/cnb-rates-batch/support/concurrent"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
 )
 
 // Batch represents batch subroutine
 type Batch struct {
-	concurrent.DaemonSupport
 	storage localfs.Storage
 	metrics *metrics.Metrics
 }
 
 // NewBatch returns batch fascade
-func NewBatch(ctx context.Context, rootStorage string, metrics *metrics.Metrics) *Batch {
+func NewBatch(rootStorage string, metrics *metrics.Metrics) *Batch {
 	storage, err := localfs.NewPlaintextStorage(rootStorage)
 	if err != nil {
 		log.Error().Msgf("Failed to ensure storage %+v", err)
 		return nil
 	}
 	return &Batch{
-		DaemonSupport: concurrent.NewDaemonSupport(ctx, "batch"),
 		storage:       storage,
 		metrics:       metrics,
-	}
-}
-
-// WaitReady wait for batch to be ready
-func (batch *Batch) WaitReady(deadline time.Duration) (err error) {
-	if batch == nil {
-		return nil
-	}
-	defer func() {
-		if e := recover(); e != nil {
-			switch x := e.(type) {
-			case string:
-				err = fmt.Errorf(x)
-			case error:
-				err = x
-			default:
-				err = fmt.Errorf("unknown panic")
-			}
-		}
-	}()
-
-	ticker := time.NewTicker(deadline)
-	select {
-	case <-batch.IsReady:
-		ticker.Stop()
-		err = nil
-		return
-	case <-ticker.C:
-		err = fmt.Errorf("cnb-rates-batch daemon was not ready within %v seconds", deadline)
-		return
 	}
 }
 
@@ -165,11 +129,31 @@ func (batch *Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
 	return nil
 }
 
-func (batch *Batch) ProcessNewFX() {
+
+// Setup hydrates metrics from storage
+func (batch *Batch) Setup() error {
+	return nil
+}
+
+// Done returns always finished
+func (batch *Batch) Done() <-chan interface{} {
+	done := make(chan interface{})
+	close(done)
+	return done
+}
+
+// Cancel does nothing
+func (batch *Batch) Cancel() {
+}
+
+// Work represents metrics worker work
+func (batch *Batch) Work() {
+	defer syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 	if batch == nil {
 		return
 	}
 
+	// FIXME make cancelable
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -179,40 +163,6 @@ func (batch *Batch) ProcessNewFX() {
 	go batch.ProcessNewFXOther(&wg)
 
 	wg.Wait()
-}
 
-// Start handles everything needed to start batch daemon
-func (batch *Batch) Start() {
-	if batch == nil {
-		return
-	}
 
-	batch.MarkReady()
-
-	select {
-	case <-batch.CanStart:
-		break
-	case <-batch.Done():
-		batch.MarkDone()
-		return
-	}
-
-	log.Info().Msg("Start cnb-batch daemon")
-
-	batch.ProcessNewFX()
-
-	go func() {
-		for {
-			select {
-			case <-batch.Done():
-				batch.MarkDone()
-				return
-			}
-		}
-	}()
-
-	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
-
-	batch.WaitStop()
-	log.Info().Msg("Stop batch-batch daemon")
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019, Jan Cajthaml <jan.cajthaml@gmail.com>
+// Copyright (c) 2016-2020, Jan Cajthaml <jan.cajthaml@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ type Configuration struct {
 	ServerCert string
 	// LogLevel ignorecase log level
 	LogLevel string
+	// MetricsContinuous determines if metrics should start from last state
+	MetricsContinuous bool
 	// MetricsRefreshRate represents interval in which in memory metrics should be
 	// persisted to disk
 	MetricsRefreshRate time.Duration
@@ -40,26 +42,14 @@ type Configuration struct {
 
 // LoadConfig loads application configuration
 func LoadConfig() Configuration {
-	logLevel := strings.ToUpper(envString("CNB_RATES_LOG_LEVEL", "DEBUG"))
-	serverKey := envString("CNB_RATES_SERVER_KEY", "")
-	serverCert := envString("CNB_RATES_SERVER_CERT", "")
-	rootStorage := envString("CNB_RATES_STORAGE", "/data")
-	port := envInteger("CNB_RATES_HTTP_PORT", 4011)
-	metricsOutput := envFilename("CNB_RATES_METRICS_OUTPUT", "/tmp")
-	metricsRefreshRate := envDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second)
-
-	if rootStorage == "" || serverKey == "" || serverCert == "" {
-		log.Error().Msg("missing required parameter to run")
-		panic("missing required parameter to run")
-	}
-
 	return Configuration{
-		MetricsRefreshRate: metricsRefreshRate,
-		MetricsOutput:      metricsOutput,
-		RootStorage:        rootStorage,
-		ServerPort:         port,
-		ServerKey:          serverKey,
-		ServerCert:         serverCert,
-		LogLevel:           logLevel,
+		RootStorage:        envString("CNB_RATES_STORAGE", "/data"),
+		ServerPort:         envInteger("CNB_RATES_HTTP_PORT", 4011),
+		ServerKey:          envString("CNB_RATES_SERVER_KEY", ""),
+		ServerCert:         envString("CNB_RATES_SERVER_CERT", ""),
+		LogLevel:           strings.ToUpper(envString("CNB_RATES_LOG_LEVEL", "DEBUG")),
+		MetricsContinuous:  envBoolean("CNB_RATES_METRICS_CONTINUOUS", true),
+		MetricsRefreshRate: envDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second),
+		MetricsOutput:      envFilename("CNB_RATES_METRICS_OUTPUT", "/tmp/cnb-rates-rest-metrics"),
 	}
 }
