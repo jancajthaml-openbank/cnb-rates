@@ -16,7 +16,9 @@ Restart=no
 RestartSec=0
 TimeoutStartSec=0
 TimeoutSec=infinity
+SuccessExitStatus=2
 KillMode=process
+KillSignal=SIGTERM
 
 [Install]
 WantedBy=multi-user.target
