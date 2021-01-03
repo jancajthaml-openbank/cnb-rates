@@ -57,7 +57,10 @@ bundle-debian-%: %
 
 .PHONY: bundle-docker
 bundle-docker:
-	@docker build -t openbank/cnb-rates:$(VERSION)-$(META) .
+	@docker build \
+		-t openbank/cnb-rates:$(VERSION)-$(META) \
+		-f packaging/docker/Dockerfile \
+		.
 
 .PHONY: bootstrap
 bootstrap:
