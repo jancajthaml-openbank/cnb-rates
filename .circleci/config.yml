@@ -434,7 +434,7 @@ jobs:
       - run:
           name: Package for debian
           command: |
-            VERSION=$(cat /mnt/ramdisk/SHORT_VERSION)
+            VERSION=$(cat /mnt/ramdisk/VERSION)
             /mnt/ramdisk/dev/lifecycle/debian \
               --arch amd64 \
               --pkg cnb-rates \
@@ -461,7 +461,7 @@ jobs:
       - run:
           name: Package for debian
           command: |
-            VERSION=$(cat /mnt/ramdisk/SHORT_VERSION)
+            VERSION=$(cat /mnt/ramdisk/VERSION)
             /mnt/ramdisk/dev/lifecycle/debian \
               --arch armhf \
               --pkg cnb-rates \
@@ -488,7 +488,7 @@ jobs:
       - run:
           name: Package for debian
           command: |
-            VERSION=$(cat /mnt/ramdisk/SHORT_VERSION)
+            VERSION=$(cat /mnt/ramdisk/VERSION)
             /mnt/ramdisk/dev/lifecycle/debian \
               --arch arm64 \
               --pkg cnb-rates \
