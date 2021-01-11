@@ -117,6 +117,13 @@ sync:
 		--rm sync \
 		--source /go/src/github.com/jancajthaml-openbank/cnb-rates-batch
 
+.PHONY: scan
+scan:
+	docker scan \
+	  openbank/cnb-rates:$(VERSION)-$(META) \
+	  --file ./packaging/docker/Dockerfile \
+	  --exclude-base
+
 .PHONY: test
 test:
 	@docker-compose \
