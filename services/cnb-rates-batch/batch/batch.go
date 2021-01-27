@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020, Jan Cajthaml <jan.cajthaml@gmail.com>
+// Copyright (c) 2016-2021, Jan Cajthaml <jan.cajthaml@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ type Batch struct {
 func NewBatch(rootStorage string, metrics *metrics.Metrics) *Batch {
 	storage, err := localfs.NewPlaintextStorage(rootStorage)
 	if err != nil {
-		log.Error().Msgf("Failed to ensure storage %+v", err)
+		log.Error().Err(err).Msg("Failed to ensure storage")
 		return nil
 	}
 	return &Batch{
@@ -62,22 +62,22 @@ func (batch *Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
 		log.Info().Msgf("Processing new fx-main for %s", day)
 		data, err := batch.storage.ReadFileFully(cachePath + day)
 		if err != nil {
-			log.Warn().Msgf("error parse main-fx CSV data for day %s, %+v\n", day, err)
+			log.Warn().Err(err).Msgf("failed to parse main-fx CSV data for day %s", day)
 			continue
 		}
 		result, err := utils.ParseCSV(day, data)
 		if err != nil {
-			log.Warn().Msgf("error parse fx-main CSV data for day %s, %+v\n", day, err)
+			log.Warn().Err(err).Msgf("failed to parse fx-main CSV data for day %s", day)
 			continue
 		}
 		bytes, err := result.MarshalJSON()
 		if err != nil {
-			log.Warn().Msgf("error marshall fx-main data for day %s, %+v\n", day, err)
+			log.Warn().Err(err).Msgf("failed to marshall fx-main data for day %s", day)
 			continue
 		}
 		err = batch.storage.WriteFile(utils.FXMainDailyCachePath(result.Date), bytes)
 		if err != nil {
-			log.Warn().Msgf("error write cache fail fx-main data for day %s, %+v\n", day, err)
+			log.Warn().Err(err).Msgf("failed to write cache fx-main data for day %s", day)
 			continue
 		}
 		batch.metrics.DayProcessed()
@@ -105,22 +105,22 @@ func (batch *Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
 		log.Info().Msgf("Processing new fx-other for %s", day)
 		data, err := batch.storage.ReadFileFully(cachePath + day)
 		if err != nil {
-			log.Warn().Msgf("error parse fx-other CSV data for day %s, %+v\n", day, err)
+			log.Warn().Err(err).Msgf("failed to parse fx-other CSV data for day %s", day)
 			continue
 		}
 		result, err := utils.ParseCSV(day, data)
 		if err != nil {
-			log.Warn().Msgf("error parse fx-other CSV data for day %s, %+v\n", day, err)
+			log.Warn().Err(err).Msgf("failed to parse fx-other CSV data for day %s", day)
 			continue
 		}
 		bytes, err := result.MarshalJSON()
 		if err != nil {
-			log.Warn().Msgf("error marshall fx-other data for mo %s, %+v\n", day, err)
+			log.Warn().Err(err).Msgf("failed to marshall fx-other data for mo %s", day)
 			continue
 		}
 		err = batch.storage.WriteFile(utils.FXOtherDailyCachePath(result.Date), bytes)
 		if err != nil {
-			log.Warn().Msgf("error write cache fail fx-other data for day %s, %+v\n", day, err)
+			log.Warn().Err(err).Msgf("failed to write cache fail fx-other data for day %s", day)
 			continue
 		}
 		batch.metrics.DayProcessed()
@@ -154,13 +154,10 @@ func (batch *Batch) Work() {
 
 	// FIXME make cancelable
 	var wg sync.WaitGroup
+	wg.Add(2)
 
-	wg.Add(1)
 	go batch.ProcessNewFXMain(&wg)
-
-	wg.Add(1)
 	go batch.ProcessNewFXOther(&wg)
 
 	wg.Wait()
-
 }

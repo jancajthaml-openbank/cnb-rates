@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020, Jan Cajthaml <jan.cajthaml@gmail.com>
+// Copyright (c) 2016-2021, Jan Cajthaml <jan.cajthaml@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,23 +14,11 @@
 
 package main
 
-import (
-	"context"
-	"fmt"
-	"github.com/jancajthaml-openbank/cnb-rates-batch/boot"
-)
+import "github.com/jancajthaml-openbank/cnb-rates-batch/boot"
 
 func main() {
-	fmt.Println(">>> Start <<<")
-
 	program := boot.NewProgram()
 	program.Setup()
-
-	defer func() {
-		program.Stop()
-		fmt.Println(">>> Stop <<<")
-	}()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	program.Start(ctx, cancel)
+	program.Start()
+	program.Stop()
 }

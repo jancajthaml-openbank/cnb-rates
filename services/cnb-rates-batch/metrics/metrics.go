@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020, Jan Cajthaml <jan.cajthaml@gmail.com>
+// Copyright (c) 2016-2021, Jan Cajthaml <jan.cajthaml@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ type Metrics struct {
 func NewMetrics(output string, continuous bool) *Metrics {
 	storage, err := localfs.NewPlaintextStorage(output)
 	if err != nil {
-		log.Error().Msgf("Failed to ensure storage %+v", err)
+		log.Error().Err(err).Msg("Failed to ensure storage")
 		return nil
 	}
 	return &Metrics{
