@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020, Jan Cajthaml <jan.cajthaml@gmail.com>
+// Copyright (c) 2016-2021, Jan Cajthaml <jan.cajthaml@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ func (daemon *OneShotDaemon) Start(parentContext context.Context, cancelFunction
 	}
 	err := daemon.Setup()
 	if err != nil {
-		log.Error().Msgf("Setup daemon %s error %+v", daemon.name, err.Error())
+		log.Error().Err(err).Msgf("Setup daemon %s", daemon.name)
 		return
 	}
 	go func() {
