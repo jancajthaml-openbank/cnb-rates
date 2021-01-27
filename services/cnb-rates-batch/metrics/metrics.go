@@ -31,7 +31,7 @@ type Metrics struct {
 func NewMetrics(output string, continuous bool) *Metrics {
 	storage, err := localfs.NewPlaintextStorage(output)
 	if err != nil {
-		log.Error().Msgf("Failed to ensure storage %+v", err)
+		log.Error().Err(err).Msg("Failed to ensure storage")
 		return nil
 	}
 	return &Metrics{
