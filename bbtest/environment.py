@@ -6,6 +6,18 @@ from helpers.unit import UnitHelper
 from helpers.timeshift import TimeshiftHelper
 from helpers.shell import execute
 from mocks.cnb.server import CNBMock
+from helpers.logger import logger
+
+
+def before_feature(context, feature):
+  context.log.info('')
+  context.log.info('  (FEATURE) {}'.format(feature.name))
+
+
+def before_scenario(context, scenario):
+  context.log.info('')
+  context.log.info('  (SCENARIO) {}'.format(scenario.name))
+  context.log.info('')
 
 
 def after_feature(context, feature):
@@ -13,6 +25,7 @@ def after_feature(context, feature):
 
 
 def before_all(context):
+  context.log = logger()
   context.timeshift = TimeshiftHelper(context)
   context.unit = UnitHelper(context)
   context.cnb = CNBMock(context)

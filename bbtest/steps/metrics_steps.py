@@ -10,7 +10,7 @@ from helpers.eventually import eventually
 
 @then('file {path} should exist')
 def file_should_exist(context, path):
-  @eventually(2)
+  @eventually(10)
   def impl():
     assert os.path.isfile(path) is True, 'file {} does not exists'.format(path)
   impl()
@@ -42,7 +42,7 @@ def step_impl(context, path):
 def step_impl(context, path):
   file_should_exist(context, path)
 
-  @eventually(5)
+  @eventually(10)
   def wait_for_metrics_update():
     actual = dict()
     with open(path, 'r') as fd:
