@@ -1,12 +1,14 @@
 [Unit]
-Description=openbank CNB Rates services namespace
+Description=openbank CNB Rates control group
 After=inetd.service
 ConditionPathExists=/etc/cnb-rates/conf.d/init.conf
 
 [Service]
 Type=oneshot
-ExecStart=/bin/echo start cnb-rates namespace
+ExecStart=/bin/true
 RemainAfterExit=yes
+StartLimitBurst=0
+StartLimitInterval=0
 
 [Install]
 WantedBy=multi-user.target

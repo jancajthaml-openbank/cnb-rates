@@ -2,7 +2,7 @@
 Description=openbank CNB Rates Import timer
 PartOf=cnb-rates.service
 After=cnb-rates.service
-ConditionPathExists=/etc/cnb-rates/conf.d/init.conf
+Requires=cnb-rates.service
 
 [Timer]
 OnCalendar=*-*-* 13:32:00

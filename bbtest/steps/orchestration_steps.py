@@ -84,7 +84,7 @@ def unit_running(context, unit):
   def wait_for_unit_state_change():
     (code, result, error) = execute(["systemctl", "show", "-p", "SubState", unit])
     assert code == 0, str(result) + ' ' + str(error)
-    assert 'SubState=running' in result, str(result) + ' ' + str(error)
+    assert 'SubState=running' in result, '{} {}'.format(unit, result)
 
   wait_for_unit_state_change()
 
@@ -96,7 +96,7 @@ def unit_not_running(context, unit):
   def wait_for_unit_state_change():
     (code, result, error) = execute(["systemctl", "show", "-p", "SubState", unit])
     assert code == 0, str(result) + ' ' + str(error)
-    assert 'SubState=dead' in result, str(result) + ' ' + str(error)
+    assert 'SubState=running' not in result, '{} {}'.format(unit, result)
 
   wait_for_unit_state_change()
 

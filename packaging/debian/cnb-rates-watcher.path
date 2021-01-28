@@ -1,0 +1,9 @@
+[Unit]
+Description=openbank CNB Rates configuration watcher
+
+[Path]
+PathChanged=/etc/cnb-rates/conf.d/init.conf
+Unit=cnb-rates-watcher.service
+
+[Install]
+WantedBy=multi-user.target
