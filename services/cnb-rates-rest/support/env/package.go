@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics
+package env
 
-import "github.com/jancajthaml-openbank/cnb-rates-import/support/logging"
+import "github.com/jancajthaml-openbank/cnb-rates-rest/support/logging"
 
-var log = logging.New("metrics")
+var log = logging.New("env")

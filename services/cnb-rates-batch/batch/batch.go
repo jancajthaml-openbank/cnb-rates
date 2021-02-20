@@ -18,7 +18,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/jancajthaml-openbank/cnb-rates-batch/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/utils"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
@@ -27,11 +26,10 @@ import (
 // Batch represents batch subroutine
 type Batch struct {
 	storage localfs.Storage
-	metrics *metrics.Metrics
 }
 
 // NewBatch returns batch fascade
-func NewBatch(rootStorage string, metrics *metrics.Metrics) *Batch {
+func NewBatch(rootStorage string) *Batch {
 	storage, err := localfs.NewPlaintextStorage(rootStorage)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to ensure storage")
@@ -39,7 +37,6 @@ func NewBatch(rootStorage string, metrics *metrics.Metrics) *Batch {
 	}
 	return &Batch{
 		storage: storage,
-		metrics: metrics,
 	}
 }
 
@@ -80,7 +77,6 @@ func (batch *Batch) ProcessNewFXMain(wg *sync.WaitGroup) error {
 			log.Warn().Err(err).Msgf("failed to write cache fx-main data for day %s", day)
 			continue
 		}
-		batch.metrics.DayProcessed()
 	}
 
 	return nil
@@ -123,13 +119,12 @@ func (batch *Batch) ProcessNewFXOther(wg *sync.WaitGroup) error {
 			log.Warn().Err(err).Msgf("failed to write cache fail fx-other data for day %s", day)
 			continue
 		}
-		batch.metrics.DayProcessed()
 	}
 
 	return nil
 }
 
-// Setup hydrates metrics from storage
+// Setup does nothing
 func (batch *Batch) Setup() error {
 	return nil
 }
@@ -145,7 +140,7 @@ func (batch *Batch) Done() <-chan interface{} {
 func (batch *Batch) Cancel() {
 }
 
-// Work represents metrics worker work
+// Work represents batch work
 func (batch *Batch) Work() {
 	defer syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 	if batch == nil {

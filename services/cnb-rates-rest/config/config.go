@@ -15,8 +15,8 @@
 package config
 
 import (
+	"github.com/jancajthaml-openbank/cnb-rates-rest/support/env"
 	"strings"
-	"time"
 )
 
 // Configuration of application
@@ -31,25 +31,15 @@ type Configuration struct {
 	ServerCert string
 	// LogLevel ignorecase log level
 	LogLevel string
-	// MetricsContinuous determines if metrics should start from last state
-	MetricsContinuous bool
-	// MetricsRefreshRate represents interval in which in memory metrics should be
-	// persisted to disk
-	MetricsRefreshRate time.Duration
-	// MetricsOutput represents output file for metrics persistence
-	MetricsOutput string
 }
 
 // LoadConfig loads application configuration
 func LoadConfig() Configuration {
 	return Configuration{
-		RootStorage:        envString("CNB_RATES_STORAGE", "/data"),
-		ServerPort:         envInteger("CNB_RATES_HTTP_PORT", 4011),
-		ServerKey:          envString("CNB_RATES_SERVER_KEY", ""),
-		ServerCert:         envString("CNB_RATES_SERVER_CERT", ""),
-		LogLevel:           strings.ToUpper(envString("CNB_RATES_LOG_LEVEL", "DEBUG")),
-		MetricsContinuous:  envBoolean("CNB_RATES_METRICS_CONTINUOUS", true),
-		MetricsRefreshRate: envDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second),
-		MetricsOutput:      envFilename("CNB_RATES_METRICS_OUTPUT", "/tmp/cnb-rates-rest-metrics"),
+		RootStorage: env.String("CNB_RATES_STORAGE", "/data"),
+		ServerPort:  env.Int("CNB_RATES_HTTP_PORT", 4011),
+		ServerKey:   env.String("CNB_RATES_SERVER_KEY", ""),
+		ServerCert:  env.String("CNB_RATES_SERVER_CERT", ""),
+		LogLevel:    strings.ToUpper(env.String("CNB_RATES_LOG_LEVEL", "DEBUG")),
 	}
 }

@@ -15,8 +15,8 @@
 package config
 
 import (
+	"github.com/jancajthaml-openbank/cnb-rates-batch/support/env"
 	"strings"
-	"time"
 )
 
 // Configuration of application
@@ -27,23 +27,13 @@ type Configuration struct {
 	RootStorage string
 	// LogLevel ignorecase log level
 	LogLevel string
-	// MetricsContinuous determines if metrics should start from last state
-	MetricsContinuous bool
-	// MetricsRefreshRate represents interval in which in memory metrics should be
-	// persisted to disk
-	MetricsRefreshRate time.Duration
-	// MetricsOutput represents output file for metrics persistence
-	MetricsOutput string
 }
 
 // LoadConfig loads application configuration
 func LoadConfig() Configuration {
 	return Configuration{
-		RootStorage:        envString("CNB_RATES_STORAGE", "/data"),
-		CNBGateway:         envString("CNB_RATES_CNB_GATEWAY", "https://www.cnb.cz"),
-		LogLevel:           strings.ToUpper(envString("CNB_RATES_LOG_LEVEL", "DEBUG")),
-		MetricsContinuous:  envBoolean("CNB_RATES_METRICS_CONTINUOUS", true),
-		MetricsRefreshRate: envDuration("CNB_RATES_METRICS_REFRESHRATE", time.Second),
-		MetricsOutput:      envFilename("CNB_RATES_METRICS_OUTPUT", "/tmp/cnb-rates-batch-metrics"),
+		RootStorage: env.String("CNB_RATES_STORAGE", "/data"),
+		CNBGateway:  env.String("CNB_RATES_CNB_GATEWAY", "https://www.cnb.cz"),
+		LogLevel:    strings.ToUpper(env.String("CNB_RATES_LOG_LEVEL", "DEBUG")),
 	}
 }

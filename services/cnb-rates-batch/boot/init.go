@@ -19,7 +19,6 @@ import (
 
 	"github.com/jancajthaml-openbank/cnb-rates-batch/batch"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/config"
-	"github.com/jancajthaml-openbank/cnb-rates-batch/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/support/concurrent"
 	"github.com/jancajthaml-openbank/cnb-rates-batch/support/logging"
 )
@@ -48,21 +47,9 @@ func (prog *Program) Setup() {
 
 	logging.SetupLogger(prog.cfg.LogLevel)
 
-	metricsWorker := metrics.NewMetrics(
-		prog.cfg.MetricsOutput,
-		prog.cfg.MetricsContinuous,
-	)
-
 	batchWorker := batch.NewBatch(
 		prog.cfg.RootStorage,
-		metricsWorker,
 	)
-
-	prog.pool.Register(concurrent.NewScheduledDaemon(
-		"metrics",
-		metricsWorker,
-		prog.cfg.MetricsRefreshRate,
-	))
 
 	prog.pool.Register(concurrent.NewOneShotDaemon(
 		"batch",

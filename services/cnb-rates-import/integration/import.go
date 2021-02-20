@@ -23,7 +23,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jancajthaml-openbank/cnb-rates-import/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-import/support/timeshift"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
@@ -33,12 +32,11 @@ import (
 type CNBRatesImport struct {
 	cnbGateway string
 	storage    localfs.Storage
-	metrics    *metrics.Metrics
 	httpClient Client
 }
 
 // NewCNBRatesImport returns cnb rates import fascade
-func NewCNBRatesImport(gateway string, rootStorage string, metrics *metrics.Metrics) *CNBRatesImport {
+func NewCNBRatesImport(gateway string, rootStorage string) *CNBRatesImport {
 	storage, err := localfs.NewPlaintextStorage(rootStorage)
 	if err != nil {
 		log.Error().Msgf("Failed to ensure storage %+v", err)
@@ -47,7 +45,6 @@ func NewCNBRatesImport(gateway string, rootStorage string, metrics *metrics.Metr
 	return &CNBRatesImport{
 		storage:    storage,
 		cnbGateway: gateway,
-		metrics:    metrics,
 		httpClient: NewClient(),
 	}
 }
@@ -80,8 +77,6 @@ func (cnb *CNBRatesImport) syncMainRateToday(today time.Time) error {
 		return fmt.Errorf("cannot store cache for %s at %s", today.Format("02.01.2006"), cachePath)
 	}
 
-	cnb.metrics.DayImported()
-
 	log.Debug().Msg("downloaded fx-main for today")
 	return nil
 }
@@ -112,8 +107,6 @@ func (cnb *CNBRatesImport) syncOtherRates(day time.Time) error {
 	}
 
 	log.Info().Msgf("downloaded fx-other for %s", day.Format("02.01.2006"))
-
-	cnb.metrics.DayImported()
 	return nil
 }
 
@@ -175,7 +168,6 @@ func (cnb *CNBRatesImport) syncMainRates(days []time.Time) error {
 				}
 
 				log.Info().Msgf("downloaded fx-main for day %s", date.Format("02.01.2006"))
-				cnb.metrics.DayImported()
 				wg.Done()
 			}
 		}

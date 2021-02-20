@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package env
 
-import "github.com/jancajthaml-openbank/cnb-rates-rest/support/logging"
+import "github.com/jancajthaml-openbank/cnb-rates-batch/support/logging"
 
-var log = logging.New("config")
+var log = logging.New("env")
