@@ -15,8 +15,8 @@
 package config
 
 import (
-	"strings"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/support/env"
+	"strings"
 )
 
 // Configuration of application
@@ -36,10 +36,10 @@ type Configuration struct {
 // LoadConfig loads application configuration
 func LoadConfig() Configuration {
 	return Configuration{
-		RootStorage:        env.String("CNB_RATES_STORAGE", "/data"),
-		ServerPort:         env.Int("CNB_RATES_HTTP_PORT", 4011),
-		ServerKey:          env.String("CNB_RATES_SERVER_KEY", ""),
-		ServerCert:         env.String("CNB_RATES_SERVER_CERT", ""),
-		LogLevel:           strings.ToUpper(env.String("CNB_RATES_LOG_LEVEL", "DEBUG")),
+		RootStorage: env.String("CNB_RATES_STORAGE", "/data"),
+		ServerPort:  env.Int("CNB_RATES_HTTP_PORT", 4011),
+		ServerKey:   env.String("CNB_RATES_SERVER_KEY", ""),
+		ServerCert:  env.String("CNB_RATES_SERVER_CERT", ""),
+		LogLevel:    strings.ToUpper(env.String("CNB_RATES_LOG_LEVEL", "DEBUG")),
 	}
 }
