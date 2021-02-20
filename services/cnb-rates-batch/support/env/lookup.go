@@ -12,8 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics
+package env
 
-import "github.com/jancajthaml-openbank/cnb-rates-batch/support/logging"
+import (
+	"os"
+)
 
-var log = logging.New("metrics")
+// Get retrieves the string value of the environment variable named by the key
+func Get(key string) (string, bool) {
+	if v := os.Getenv(key); v != "" {
+		return v, true
+	}
+	return "", false
+}
+
+// String retrieves the string value from environment named by the key.
+func String(key string, fallback string) string {
+	if str, exists := Get(key); exists {
+		return str
+	}
+	return fallback
+}

@@ -19,7 +19,6 @@ import (
 
 	"github.com/jancajthaml-openbank/cnb-rates-rest/api"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/config"
-	"github.com/jancajthaml-openbank/cnb-rates-rest/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/support/concurrent"
 	"github.com/jancajthaml-openbank/cnb-rates-rest/support/logging"
 )
@@ -48,23 +47,12 @@ func (prog *Program) Setup() {
 
 	logging.SetupLogger(prog.cfg.LogLevel)
 
-	metricsWorker := metrics.NewMetrics(
-		prog.cfg.MetricsOutput,
-		prog.cfg.MetricsContinuous,
-	)
-
 	restWorker := api.NewServer(
 		prog.cfg.ServerPort,
 		prog.cfg.ServerCert,
 		prog.cfg.ServerKey,
 		prog.cfg.RootStorage,
 	)
-
-	prog.pool.Register(concurrent.NewScheduledDaemon(
-		"metrics",
-		metricsWorker,
-		prog.cfg.MetricsRefreshRate,
-	))
 
 	prog.pool.Register(concurrent.NewOneShotDaemon(
 		"rest",

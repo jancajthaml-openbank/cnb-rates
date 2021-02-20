@@ -20,7 +20,6 @@ import (
 
 	"github.com/jancajthaml-openbank/cnb-rates-import/config"
 	"github.com/jancajthaml-openbank/cnb-rates-import/integration"
-	"github.com/jancajthaml-openbank/cnb-rates-import/metrics"
 	"github.com/jancajthaml-openbank/cnb-rates-import/support/concurrent"
 	"github.com/jancajthaml-openbank/cnb-rates-import/support/logging"
 )
@@ -49,22 +48,10 @@ func (prog *Program) Setup() {
 
 	logging.SetupLogger(prog.cfg.LogLevel)
 
-	metricsWorker := metrics.NewMetrics(
-		prog.cfg.MetricsOutput,
-		prog.cfg.MetricsContinuous,
-	)
-
 	cnbWorker := integration.NewCNBRatesImport(
 		prog.cfg.CNBGateway,
 		prog.cfg.RootStorage,
-		metricsWorker,
 	)
-
-	prog.pool.Register(concurrent.NewScheduledDaemon(
-		"metrics",
-		metricsWorker,
-		prog.cfg.MetricsRefreshRate,
-	))
 
 	prog.pool.Register(concurrent.NewScheduledDaemon(
 		"cnb",
