@@ -4,6 +4,6 @@ go 1.15
 
 require (
 	github.com/jancajthaml-openbank/local-fs v1.2.2
-	github.com/rs/zerolog v1.21.0
+	github.com/rs/zerolog v1.22.0
 	gopkg.in/inf.v0 v0.9.1
 )
