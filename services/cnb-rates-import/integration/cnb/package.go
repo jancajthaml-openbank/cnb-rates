@@ -12,22 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package cnb
 
-import "time"
+import "github.com/jancajthaml-openbank/cnb-rates-import/support/logging"
 
-func FXMainOfflineDirectory() string {
-	return "raw/fx-main"
-}
-
-func FXOtherOfflineDirectory() string {
-	return "raw/fx-other"
-}
-
-func FXMainOfflinePath(date time.Time) string {
-	return FXMainOfflineDirectory() + "/" + date.Format("02.01.2006")
-}
-
-func FXOtherOfflinePath(date time.Time) string {
-	return FXOtherOfflineDirectory() + "/" + date.Format("02.01.2006")
-}
+var log = logging.New("integration/cnb")
