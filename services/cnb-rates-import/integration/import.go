@@ -23,6 +23,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jancajthaml-openbank/cnb-rates-import/integration/cnb"
 	"github.com/jancajthaml-openbank/cnb-rates-import/support/timeshift"
 
 	localfs "github.com/jancajthaml-openbank/local-fs"
@@ -32,7 +33,7 @@ import (
 type CNBRatesImport struct {
 	cnbGateway string
 	storage    localfs.Storage
-	httpClient Client
+	client     *cnb.Client
 }
 
 // NewCNBRatesImport returns cnb rates import fascade
@@ -43,37 +44,33 @@ func NewCNBRatesImport(gateway string, rootStorage string) *CNBRatesImport {
 		return nil
 	}
 	return &CNBRatesImport{
-		storage:    storage,
-		cnbGateway: gateway,
-		httpClient: NewClient(),
+		storage: storage,
+		client:  cnb.NewClient(gateway),
 	}
 }
 
-func (cnb *CNBRatesImport) syncMainRateToday(today time.Time) error {
-	if cnb == nil {
+func (rates *CNBRatesImport) syncMainRateToday(today time.Time) error {
+	if rates == nil {
 		return nil
 	}
 	cachePath := FXMainOfflinePath(today)
-	if ok, err := cnb.storage.Exists(cachePath); err != nil {
+	if ok, err := rates.storage.Exists(cachePath); err != nil {
 		return err
 	} else if ok {
 		return nil
 	}
 
-	uri := cnb.cnbGateway + GetUrlForDateMainFx(today)
-	response, code, err := cnb.httpClient.Get(uri)
-	if code != 200 && err == nil {
-		return fmt.Errorf("sync Main Rates %+v CNB cloud error %d %+v", today, code, string(response))
-	} else if err != nil {
-		return fmt.Errorf("sync Main Rates %+v CNB cloud error %d %+v", today, code, err)
+	resp, err := rates.client.GetMainFxFor(today)
+	if err != nil {
+		return fmt.Errorf("sync Main Rates error %+v", err)
 	}
 
 	// FIXME try with backoff until hit
-	if !validateRates(today, response) {
+	if !validateRates(today, resp) {
 		return fmt.Errorf("today rate bounce %s", today.Format("02.01.2006"))
 	}
 
-	if cnb.storage.WriteFile(cachePath, response) != nil {
+	if rates.storage.WriteFile(cachePath, resp) != nil {
 		return fmt.Errorf("cannot store cache for %s at %s", today.Format("02.01.2006"), cachePath)
 	}
 
@@ -81,28 +78,24 @@ func (cnb *CNBRatesImport) syncMainRateToday(today time.Time) error {
 	return nil
 }
 
-func (cnb *CNBRatesImport) syncOtherRates(day time.Time) error {
-	if cnb == nil {
+func (rates *CNBRatesImport) syncOtherRates(day time.Time) error {
+	if rates == nil {
 		return nil
 	}
 
 	cachePath := FXOtherOfflinePath(day)
-	if ok, err := cnb.storage.Exists(cachePath); err != nil {
+	if ok, err := rates.storage.Exists(cachePath); err != nil {
 		return fmt.Errorf("corrupted cache at %s with %+v", cachePath, err)
 	} else if ok {
 		return nil
 	}
 
-	uri := cnb.cnbGateway + GetUrlForDateOtherFx(day)
-	response, code, err := cnb.httpClient.Get(uri)
-	if code != 200 && err == nil {
-		return fmt.Errorf("sync Other Rates %+v cloud error %d %+v", day, code, string(response))
-	}
+	resp, err := rates.client.GetMainFxFor(day)
 	if err != nil {
-		return fmt.Errorf("sync Other Rates %+v CNB cloud error %d %+v", day, code, err)
+		return fmt.Errorf("sync Other Rates error %+v", err)
 	}
 
-	if cnb.storage.WriteFile(cachePath, response) != nil {
+	if rates.storage.WriteFile(cachePath, resp) != nil {
 		return fmt.Errorf("cannot store cache for %s at %s", day, cachePath)
 	}
 
@@ -110,8 +103,8 @@ func (cnb *CNBRatesImport) syncOtherRates(day time.Time) error {
 	return nil
 }
 
-func (cnb *CNBRatesImport) syncMainRates(days []time.Time) error {
-	if cnb == nil {
+func (rates *CNBRatesImport) syncMainRates(days []time.Time) error {
+	if rates == nil {
 		return nil
 	}
 
@@ -133,7 +126,7 @@ func (cnb *CNBRatesImport) syncMainRates(days []time.Time) error {
 
 				cachePath := FXMainOfflinePath(date)
 
-				ok, err := cnb.storage.Exists(cachePath)
+				ok, err := rates.storage.Exists(cachePath)
 				if err != nil {
 					wg.Done()
 					log.Warn().Msgf("corrupted cache at %s with %+v", cachePath, err)
@@ -144,24 +137,14 @@ func (cnb *CNBRatesImport) syncMainRates(days []time.Time) error {
 					continue
 				}
 
-				var (
-					response []byte
-					code     int
-				)
-
-				uri := cnb.cnbGateway + GetUrlForDateMainFx(date)
-				response, code, err = cnb.httpClient.Get(uri)
-				if code != 200 && err == nil {
-					log.Warn().Msgf("sync Main Rates %+v CNB cloud error %d %+v", date, code, string(response))
-					wg.Done()
-					continue
-				} else if err != nil {
-					log.Warn().Msgf("sync Main Rates %+v CNB cloud error %d %+v", date, code, err)
+				resp, err := rates.client.GetMainFxFor(date)
+				if err != nil {
+					log.Warn().Msgf("sync Main Rates error %+v", err)
 					wg.Done()
 					continue
 				}
 
-				if cnb.storage.WriteFile(cachePath, response) != nil {
+				if rates.storage.WriteFile(cachePath, resp) != nil {
 					log.Warn().Msgf("cannot store cache for %s at %s", date, cachePath)
 					wg.Done()
 					continue
@@ -179,7 +162,7 @@ func (cnb *CNBRatesImport) syncMainRates(days []time.Time) error {
 
 	for _, day := range days {
 		cachePath := FXMainOfflinePath(day)
-		ok, err := cnb.storage.Exists(cachePath)
+		ok, err := rates.storage.Exists(cachePath)
 		if err != nil {
 			log.Warn().Msgf("corrupted cache at %s with %+v", cachePath, err)
 			continue
@@ -227,14 +210,14 @@ func validateRates(date time.Time, data []byte) bool {
 	return date.Year() == expected.Year() && date.Month() == expected.Month() && date.Day() == expected.Day()
 }
 
-func (cnb *CNBRatesImport) importRoundtrip() {
-	if cnb == nil {
+func (rates *CNBRatesImport) importRoundtrip() {
+	if rates == nil {
 		return
 	}
 
 	now := time.Now()
 
-	if err := cnb.syncMainRateToday(now); err != nil {
+	if err := rates.syncMainRateToday(now); err != nil {
 		log.Warn().Msg(err.Error())
 	}
 
@@ -246,7 +229,7 @@ func (cnb *CNBRatesImport) importRoundtrip() {
 	months := timeshift.GetMonthsBetween(fxMainHistoryStart, today)
 	for _, month := range months {
 		// FIXME context cancel check
-		//if cnb.IsCanceled() {
+		//if rates.IsCanceled() {
 		//return
 		//}
 
@@ -270,30 +253,30 @@ func (cnb *CNBRatesImport) importRoundtrip() {
 
 			log.Debug().Msgf("Synchonizing other fx rates for %s", lastDay.Format("02.01.2006"))
 			// FIXME must be last day of `currentMonth` for there fx fates
-			if err := cnb.syncOtherRates(lastDay); err != nil {
+			if err := rates.syncOtherRates(lastDay); err != nil {
 				log.Warn().Msg(err.Error())
 			}
 		}
 
 		log.Debug().Msgf("Synchonizing main fx rates from %s to %s", days[0].Format("02.01.2006"), days[len(days)-1].Format("02.01.2006"))
-		cnb.syncMainRates(days)
+		rates.syncMainRates(days)
 	}
 }
 
-func (cnb *CNBRatesImport) Setup() error {
+func (rates *CNBRatesImport) Setup() error {
 	return nil
 }
 
-func (cnb *CNBRatesImport) Done() <-chan interface{} {
+func (rates *CNBRatesImport) Done() <-chan interface{} {
 	done := make(chan interface{})
 	close(done)
 	return done
 }
 
-func (cnb *CNBRatesImport) Cancel() {
+func (rates *CNBRatesImport) Cancel() {
 }
 
-func (cnb *CNBRatesImport) Work() {
+func (rates *CNBRatesImport) Work() {
 	defer syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
-	cnb.importRoundtrip()
+	rates.importRoundtrip()
 }
