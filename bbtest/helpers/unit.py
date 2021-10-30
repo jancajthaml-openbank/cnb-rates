@@ -91,7 +91,7 @@ class UnitHelper(object):
       archive.extract(os.path.basename(target), os.path.dirname(target))
 
       (code, result, error) = execute(['dpkg', '-c', target])
-      if code != 0:
+      if code != 'OK':
         raise RuntimeError('code: {}, stdout: [{}], stderr: [{}]'.format(code, result, error))
       else:
         with open('reports/blackbox-tests/meta/debian.cnb-rates.txt', 'w') as fd:
@@ -127,13 +127,13 @@ class UnitHelper(object):
 
   def collect_logs(self):
     (code, result, error) = execute(['journalctl', '-o', 'cat', '--no-pager'])
-    if code == 0:
+    if code == 'OK':
       with open('reports/blackbox-tests/logs/journal.log', 'w') as fd:
         fd.write(result)
 
     for unit in set(self.__get_systemd_units() + self.units):
       (code, result, error) = execute(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'])
-      if code != 0 or not result:
+      if code != 'OK' or not result:
         continue
       with open('reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as fd:
         fd.write(result)

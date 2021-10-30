@@ -13,7 +13,7 @@ class TimeshiftHelper(object):
 
   def set_date_time(self, new_epoch):
     (code, result, error) = execute(['timedatectl', 'set-time', new_epoch.strftime('%Y-%m-%d %H:%M:%S')])
-    assert code == 0, "timedatectl set-time failed with: {} {}".format(result, error)
+    assert code == 'OK', "timedatectl set-time failed with: {} {}".format(result, error)
 
   def bootstrap(self):
     execute(['timedatectl', 'set-ntp', '0'])
