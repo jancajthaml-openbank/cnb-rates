@@ -3,8 +3,9 @@ Description=openbank CNB Rates configuration watcher
 StartLimitBurst=5
 
 [Service]
-Type=oneshot
+Type=simple
+ExecStartPre=echo 'restarting cnb-rates (configuration has changed)'
 ExecStart=/bin/sh -c 'systemctl restart cnb-rates.service'
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=cnb-rates.service
