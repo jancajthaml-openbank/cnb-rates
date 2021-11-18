@@ -1,4 +1,0 @@
-bin/cnb-rates-rest-linux-armhf usr/bin
-bin/cnb-rates-import-linux-armhf usr/bin
-bin/cnb-rates-batch-linux-armhf usr/bin
-init.conf etc/cnb-rates/conf.d
