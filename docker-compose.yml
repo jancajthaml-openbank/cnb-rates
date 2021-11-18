@@ -10,10 +10,10 @@ services:
     image: jancajthaml/go
     tty: true
     volumes:
-      - .:/project
-      - ./services/cnb-rates-import:/go/src/github.com/jancajthaml-openbank/cnb-rates-import
-      - ./services/cnb-rates-rest:/go/src/github.com/jancajthaml-openbank/cnb-rates-rest
-      - ./services/cnb-rates-batch:/go/src/github.com/jancajthaml-openbank/cnb-rates-batch
+      - .:/project:delegated
+      - ./services/cnb-rates-import:/go/src/github.com/jancajthaml-openbank/cnb-rates-import:delegated
+      - ./services/cnb-rates-rest:/go/src/github.com/jancajthaml-openbank/cnb-rates-rest:delegated
+      - ./services/cnb-rates-batch:/go/src/github.com/jancajthaml-openbank/cnb-rates-batch:delegated
     working_dir: /project
     environment:
       - GOOS
@@ -27,7 +27,7 @@ services:
     image: jancajthaml/debian-packager
     tty: true
     volumes:
-      - .:/project
+      - .:/project:delegated
     working_dir: /project
 
   # -------------------------------------------------------------------------- #
@@ -89,11 +89,10 @@ services:
   # -------------------------------------------------------------------------- #
 
   bbtest:
-    image: jancajthaml/bbtest:amd64
+    image: jancajthaml/bbtest:${ARCH}
     environment:
       IMAGE_VERSION: ${VERSION:-latest}-${META:-main}
       UNIT_VERSION: ${VERSION:-latest}
-      UNIT_ARCH: amd64
     cap_add:
       - SYS_TIME
     volumes:
