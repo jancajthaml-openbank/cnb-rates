@@ -6,6 +6,7 @@ from helpers.shell import execute
 import os
 from helpers.eventually import eventually
 import datetime
+from helpers.http import Request
 
 
 @given('current time is "{value}"')
@@ -84,9 +85,19 @@ def unit_running(context, unit):
   def wait_for_unit_state_change():
     (code, result, error) = execute(["systemctl", "show", "-p", "SubState", unit])
     assert code == 'OK', str(result) + ' ' + str(error)
-    assert 'SubState=running' in result, '{} {}'.format(unit, result)
+    assert 'SubState=running' in result, result
 
   wait_for_unit_state_change()
+
+  if 'cnb-rates-rest' in unit:
+    request = Request(method='GET', url="https://127.0.0.1/health")
+
+    @eventually(5)
+    def wait_for_healthy():
+      response = request.do()
+      assert response.status == 200, str(response.status)
+
+    wait_for_healthy()
 
 
 @given('unit "{unit}" is not running')
@@ -96,7 +107,7 @@ def unit_not_running(context, unit):
   def wait_for_unit_state_change():
     (code, result, error) = execute(["systemctl", "show", "-p", "SubState", unit])
     assert code == 'OK', str(result) + ' ' + str(error)
-    assert 'SubState=running' not in result, '{} {}'.format(unit, result)
+    assert 'SubState=dead' in result, result
 
   wait_for_unit_state_change()
 
