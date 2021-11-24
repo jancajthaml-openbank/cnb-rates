@@ -15,7 +15,7 @@
 # ---------------------------------------------------------------------------- #
 # stage 0 bootstrap dependencies
 
-FROM amd64/debian:sid-slim
+FROM --platform=linux/arm64/v8 arm64v8/debian:sid-slim
 
 COPY packaging/bin/* /opt/artifacts/
 
@@ -23,17 +23,17 @@ USER root
 
 RUN apt-get update
 
-RUN find /opt/artifacts -name vault_*_amd64.deb | xargs -I{} -tx apt-get install -y -f {}
+RUN find /opt/artifacts -name vault_*_arm64.deb | xargs -I{} -tx apt-get install -y -f {}
 
 # ---------------------------------------------------------------------------- #
 # stage 1 link files
 
-FROM amd64/debian:sid-slim
+FROM --platform=linux/arm64/v8 arm64v8/debian:sid-slim
 
 COPY --from=0 /opt/artifacts /opt/artifacts
 
-RUN ln -s /opt/artifacts/cnb-rates-rest-linux-amd64 /usr/bin/cnb-rates-rest && \
-    ln -s /opt/artifacts/cnb-rates-import-linux-amd64 /usr/bin/cnb-rates-import && \
-    ln -s /opt/artifacts/cnb-rates-batch-linux-amd64 /usr/bin/cnb-rates-batch
+RUN ln -s /opt/artifacts/cnb-rates-rest-linux-arm64 /usr/bin/cnb-rates-rest && \
+    ln -s /opt/artifacts/cnb-rates-import-linux-arm64 /usr/bin/cnb-rates-import && \
+    ln -s /opt/artifacts/cnb-rates-batch-linux-arm64 /usr/bin/cnb-rates-batch
 
 ENTRYPOINT [ "cnb-rates-rest" ]
