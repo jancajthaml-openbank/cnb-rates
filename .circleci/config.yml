@@ -71,6 +71,9 @@ workflows:
             tags:
               only: /^v[0-9]+(\.[0-9]+)*$/
       - package-docker:
+          matrix:
+            parameters:
+              arch: [amd64, arm64]
           requires:
             - unit-test
             - package-debian-amd64
@@ -125,6 +128,9 @@ workflows:
             - compile-arm64
             - versions
       - package-docker:
+          matrix:
+            parameters:
+              arch: [amd64, arm64]
           requires:
             - unit-test
             - package-debian-amd64
@@ -194,7 +200,7 @@ jobs:
           key: code-{{ .Environment.CIRCLE_TAG }}-{{ .Environment.CIRCLE_PROJECT_REPONAME }}-{{ .Environment.CIRCLE_SHA1 }}
           paths:
             - /mnt/ramdisk/.git
-            - /mnt/ramdisk/dev
+            - /home/circleci/project
             - /mnt/ramdisk/services
             - /mnt/ramdisk/packaging
             - /mnt/ramdisk/Dockerfile
@@ -240,17 +246,17 @@ jobs:
       - run:
           name: Sync cnb-rates-import dependencies
           command: |
-            /mnt/ramdisk/dev/lifecycle/sync \
+            /home/circleci/project/lifecycle/sync \
               --source /mnt/ramdisk/services/cnb-rates-import
       - run:
           name: Sync cnb-rates-batch dependencies
           command: |
-            /mnt/ramdisk/dev/lifecycle/sync \
+            /home/circleci/project/lifecycle/sync \
               --source /mnt/ramdisk/services/cnb-rates-batch
       - run:
           name: Sync cnb-rates-rest dependencies
           command: |
-            /mnt/ramdisk/dev/lifecycle/sync \
+            /home/circleci/project/lifecycle/sync \
               --source /mnt/ramdisk/services/cnb-rates-rest
       - save_cache:
           key: dependencies-{{ .Environment.CIRCLE_TAG }}-{{ .Environment.CIRCLE_PROJECT_REPONAME }}-{{ .Environment.CIRCLE_SHA1 }}
@@ -272,21 +278,21 @@ jobs:
       - run:
           name: Unit test cnb-rates-import
           command: |
-            /mnt/ramdisk/dev/lifecycle/test \
+            /home/circleci/project/lifecycle/test \
               --source /mnt/ramdisk/services/cnb-rates-import \
               --output /mnt/ramdisk/reports
           no_output_timeout: 5m
       - run:
           name: Unit test cnb-rates-batch
           command: |
-            /mnt/ramdisk/dev/lifecycle/test \
+            /home/circleci/project/lifecycle/test \
               --source /mnt/ramdisk/services/cnb-rates-batch \
               --output /mnt/ramdisk/reports
           no_output_timeout: 5m
       - run:
           name: Unit test cnb-rates-rest
           command: |
-            /mnt/ramdisk/dev/lifecycle/test \
+            /home/circleci/project/lifecycle/test \
               --source /mnt/ramdisk/services/cnb-rates-rest \
               --output /mnt/ramdisk/reports
           no_output_timeout: 5m
@@ -306,7 +312,7 @@ jobs:
       - run:
           name: Compile cnb-rates-import binary
           command: |
-            /mnt/ramdisk/dev/lifecycle/package \
+            /home/circleci/project/lifecycle/package \
               --arch linux/amd64 \
               --source /mnt/ramdisk/services/cnb-rates-import \
               --output /mnt/ramdisk/packaging/bin
@@ -314,7 +320,7 @@ jobs:
       - run:
           name: Compile cnb-rates-batch binary
           command: |
-            /mnt/ramdisk/dev/lifecycle/package \
+            /home/circleci/project/lifecycle/package \
               --arch linux/amd64 \
               --source /mnt/ramdisk/services/cnb-rates-batch \
               --output /mnt/ramdisk/packaging/bin
@@ -322,7 +328,7 @@ jobs:
       - run:
           name: Compile cnb-rates-rest binary
           command: |
-            /mnt/ramdisk/dev/lifecycle/package \
+            /home/circleci/project/lifecycle/package \
               --arch linux/amd64 \
               --source /mnt/ramdisk/services/cnb-rates-rest \
               --output /mnt/ramdisk/packaging/bin
@@ -345,7 +351,7 @@ jobs:
       - run:
           name: Compile cnb-rates-import binary
           command: |
-            /mnt/ramdisk/dev/lifecycle/package \
+            /home/circleci/project/lifecycle/package \
               --arch linux/arm64 \
               --source /mnt/ramdisk/services/cnb-rates-import \
               --output /mnt/ramdisk/packaging/bin
@@ -353,7 +359,7 @@ jobs:
       - run:
           name: Compile cnb-rates-batch binary
           command: |
-            /mnt/ramdisk/dev/lifecycle/package \
+            /home/circleci/project/lifecycle/package \
               --arch linux/arm64 \
               --source /mnt/ramdisk/services/cnb-rates-batch \
               --output /mnt/ramdisk/packaging/bin
@@ -361,7 +367,7 @@ jobs:
       - run:
           name: Compile cnb-rates-rest binary
           command: |
-            /mnt/ramdisk/dev/lifecycle/package \
+            /home/circleci/project/lifecycle/package \
               --arch linux/arm64 \
               --source /mnt/ramdisk/services/cnb-rates-rest \
               --output /mnt/ramdisk/packaging/bin
@@ -387,7 +393,7 @@ jobs:
           name: Package for debian
           command: |
             VERSION=$(cat /mnt/ramdisk/VERSION)
-            /mnt/ramdisk/dev/lifecycle/debian \
+            /home/circleci/project/lifecycle/debian \
               --arch amd64 \
               --pkg cnb-rates \
               --version ${VERSION} \
@@ -414,7 +420,7 @@ jobs:
           name: Package for debian
           command: |
             VERSION=$(cat /mnt/ramdisk/VERSION)
-            /mnt/ramdisk/dev/lifecycle/debian \
+            /home/circleci/project/lifecycle/debian \
               --arch arm64 \
               --pkg cnb-rates \
               --version ${VERSION} \
@@ -428,9 +434,11 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   package-docker:
-    docker:
-      - image: docker.io/docker:18.06.0-ce-git
-    working_directory: /mnt/ramdisk
+    parameters:
+      arch:
+        type: string
+    executor: machine-<< parameters.arch >>
+    working_directory: /home/circleci/project
     steps:
       - restore_cache:
           key: code-{{ .Environment.CIRCLE_TAG }}-{{ .Environment.CIRCLE_PROJECT_REPONAME }}-{{ .Environment.CIRCLE_SHA1 }}
@@ -444,41 +452,37 @@ jobs:
           key: debian-arm64-{{ .Environment.CIRCLE_TAG }}-{{ .Environment.CIRCLE_PROJECT_REPONAME }}-{{ .Environment.CIRCLE_SHA1 }}
       - restore_cache:
           key: versions-{{ .Environment.CIRCLE_TAG }}-{{ .Environment.CIRCLE_PROJECT_REPONAME }}-{{ .Environment.CIRCLE_SHA1 }}
-      - setup_remote_docker:
-          version: 18.06.0-ce
       - run:
-          name: Package for docker
+          name: Publish << parameters.arch >> to docker.io
           command: |
-            VERSION=$(cat /mnt/ramdisk/VERSION)
-            META=$(cat /mnt/ramdisk/META)
+            export VERSION=$(cat /home/circleci/project/VERSION)
+            export META=$(cat /home/circleci/project/META)
+            export ARCH=<< parameters.arch >>
 
             docker build \
-              -t docker.io/openbank/cnb-rates:v${VERSION}-${META} \
-              -f packaging/docker/Dockerfile \
-              .
+              -t docker.io/openbank/cnb-rates:${ARCH}-${VERSION}.${META} \
+              -f ./packaging/docker/${ARCH}/Dockerfile .
+
+            echo ${DOCKER_PASSWORD} | docker login docker.io -u ${DOCKER_USER} --password-stdin
+
+            docker push docker.io/openbank/cnb-rates:${ARCH}-${VERSION}.${META}
+
+            rm -f /home/circleci/.docker/config.json
+      - run:
+          name: Publish << parameters.arch >> to docker.pkg.github.com
+          command: |
+            export VERSION=$(cat /home/circleci/project/VERSION)
+            export ARCH=<< parameters.arch >>
+
             docker build \
-              -t docker.pkg.github.com/jancajthaml-openbank/cnb-rates/cnb-rates:${VERSION} \
-              -f packaging/docker/Dockerfile \
-              .
-      - run:
-          name: Publish to docker.io
-          command: |
-            echo ${DOCKER_PASSWORD} \
-              | docker login -u ${DOCKER_USER} --password-stdin
-            VERSION=$(cat /mnt/ramdisk/VERSION)
-            META=$(cat /mnt/ramdisk/META)
-            docker push \
-              docker.io/openbank/cnb-rates:v${VERSION}-${META}
-            rm -f /root/.docker/config.json
-      - run:
-          name: Publish to docker.pkg.github.com
-          command: |
-            echo ${GITHUB_RELEASE_TOKEN} \
-              | docker login docker.pkg.github.com -u jancajthaml --password-stdin
-            VERSION=$(cat /mnt/ramdisk/VERSION)
-            docker push \
-              docker.pkg.github.com/jancajthaml-openbank/cnb-rates/cnb-rates:${VERSION}
-            rm -f /root/.docker/config.json
+              -t docker.pkg.github.com/jancajthaml-openbank/cnb-rates/cnb-rates:${ARCH}-${VERSION} \
+              -f ./packaging/docker/${ARCH}/Dockerfile .
+
+            echo ${GITHUB_RELEASE_TOKEN} | docker login docker.pkg.github.com -u ${DOCKER_USER} --password-stdin
+
+            docker push docker.pkg.github.com/jancajthaml-openbank/cnb-rates/cnb-rates:${ARCH}-${VERSION}
+
+            rm -f /home/circleci/.docker/config.json
 
   # -------------------------------------------------------------------------- #
 
@@ -544,7 +548,7 @@ jobs:
       - deploy:
           name: Release artifacts to github
           command: |
-            /mnt/ramdisk/dev/lifecycle/release \
+            /home/circleci/project/lifecycle/release \
               --version ${CIRCLE_TAG} \
               --token ${GITHUB_RELEASE_TOKEN}
 
