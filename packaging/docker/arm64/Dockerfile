@@ -13,7 +13,6 @@
 # limitations under the License.
 
 # ---------------------------------------------------------------------------- #
-# stage 0 bootstrap dependencies
 
 FROM --platform=linux/arm64/v8 arm64v8/debian:sid-slim
 
@@ -24,16 +23,5 @@ USER root
 RUN apt-get update
 
 RUN find /opt/artifacts -name vault_*_arm64.deb | xargs -I{} -tx apt-get install -y -f {}
-
-# ---------------------------------------------------------------------------- #
-# stage 1 link files
-
-FROM --platform=linux/arm64/v8 arm64v8/debian:sid-slim
-
-COPY --from=0 /opt/artifacts /opt/artifacts
-
-RUN ln -s /opt/artifacts/cnb-rates-rest-linux-arm64 /usr/bin/cnb-rates-rest && \
-    ln -s /opt/artifacts/cnb-rates-import-linux-arm64 /usr/bin/cnb-rates-import && \
-    ln -s /opt/artifacts/cnb-rates-batch-linux-arm64 /usr/bin/cnb-rates-batch
 
 ENTRYPOINT [ "cnb-rates-rest" ]
