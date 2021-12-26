@@ -22,6 +22,6 @@ USER root
 
 RUN apt-get update
 
-RUN find /opt/artifacts -name vault_*_arm64.deb | xargs -I{} -tx apt-get install -y -f {}
+RUN find /opt/artifacts -name cnb-rates_*_arm64.deb | xargs -I{} -tx apt-get install -y -f {}
 
 ENTRYPOINT [ "cnb-rates-rest" ]
