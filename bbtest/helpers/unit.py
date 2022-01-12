@@ -44,9 +44,25 @@ class UnitHelper(object):
     self.docker = docker.from_env()
     self.context = context
 
+  def install(self, file):
+    cwd = os.path.realpath('{}/../..'.format(os.path.dirname(__file__)))
+
+    (code, result, error) = execute(['dpkg', '-c', file])
+    if code != 'OK':
+      raise RuntimeError('code: {}, stdout: [{}], stderr: [{}]'.format(code, result, error))
+    else:
+      os.makedirs('{}/reports/blackbox-tests/meta'.format(cwd), exist_ok=True)
+      with open('{}/reports/blackbox-tests/meta/debian.cnb-rates.txt'.format(cwd), 'w') as fd:
+        fd.write(result)
+
+      result = [item for item in result.split(os.linesep)]
+      result = [item.rsplit('/', 1)[-1].strip() for item in result if "/lib/systemd/system/cnb-rates" in item]
+      result = [item for item in result if not item.endswith('unit.slice')]
+
+      self.units = result
+
   def download(self):
     failure = None
-    os.makedirs('/tmp/packages', exist_ok=True)
 
     self.image_version = os.environ.get('IMAGE_VERSION', '')
     self.debian_version = os.environ.get('UNIT_VERSION', '')
@@ -57,19 +73,29 @@ class UnitHelper(object):
     assert self.image_version, 'IMAGE_VERSION not provided'
     assert self.debian_version, 'UNIT_VERSION not provided'
 
-    image = 'openbank/cnb-rates:{}'.format(self.image_version)
+    cwd = os.path.realpath('{}/../..'.format(os.path.dirname(__file__)))
+
+    self.binary = '{}/packaging/bin/cnb-rates_{}_{}.deb'.format(cwd, self.debian_version, self.arch)
+
+    if os.path.exists(self.binary):
+      self.install(self.binary)
+      return
+
+    os.makedirs(os.path.dirname(self.binary), exist_ok=True)
+
+    image = 'docker.io/openbank/cnb-rates:{}'.format(self.image_version)
     package = '/opt/artifacts/cnb-rates_{}_{}.deb'.format(self.debian_version, self.arch)
-    target = '/tmp/packages/cnb-rates.deb'
+    
+    scratch_docker_cmd = ['FROM alpine']
+
+    scratch_docker_cmd.append('COPY --from={} {} {}'.format(image, package, self.binary))
 
     temp = tempfile.NamedTemporaryFile(delete=True)
     try:
       with open(temp.name, 'w') as fd:
-        fd.write(str(os.linesep).join([
-          'FROM alpine',
-          'COPY --from={} {} {}'.format(image, package, target)
-        ]))
+        fd.write(str(os.linesep).join(scratch_docker_cmd))
 
-      image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=False, tag='bbtest_artifacts-scratch')
+      image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=True, tag='bbtest_artifacts-scratch')
       for chunk in stream:
         if not 'stream' in chunk:
           continue
@@ -83,25 +109,13 @@ class UnitHelper(object):
 
       tar_name = tempfile.NamedTemporaryFile(delete=True)
       with open(tar_name.name, 'wb') as fd:
-        bits, stat = scratch.get_archive(target)
+        bits, stat = scratch.get_archive(self.binary)
         for chunk in bits:
           fd.write(chunk)
 
       archive = tarfile.TarFile(tar_name.name)
-      archive.extract(os.path.basename(target), os.path.dirname(target))
-
-      (code, result, error) = execute(['dpkg', '-c', target])
-      if code != 'OK':
-        raise RuntimeError('code: {}, stdout: [{}], stderr: [{}]'.format(code, result, error))
-      else:
-        with open('reports/blackbox-tests/meta/debian.cnb-rates.txt', 'w') as fd:
-          fd.write(result)
-
-        result = [item for item in result.split(os.linesep)]
-        result = [item.rsplit('/', 1)[-1].strip() for item in result if "/lib/systemd/system/cnb-rates" in item]
-
-        self.units = result
-
+      archive.extract(os.path.basename(self.binary), os.path.dirname(self.binary))
+      self.install(self.binary)
       scratch.remove()
     except Exception as ex:
       failure = ex
