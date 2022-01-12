@@ -39,7 +39,7 @@ def timeshift(context, value):
 @given('package {package} is {operation}')
 def step_impl(context, package, operation):
   if operation == 'installed':
-    (code, result, error) = execute(["apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confold", "/tmp/packages/{}.deb".format(package)])
+    (code, result, error) = execute(["apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confold", context.unit.binary])
     assert code == 'OK', "unable to install with code {} and {} {}".format(code, result, error)
     assert os.path.isfile('/etc/cnb-rates/conf.d/init.conf') is True
   elif operation == 'uninstalled':
