@@ -4,7 +4,6 @@
 import time
 from helpers.unit import UnitHelper
 from helpers.timeshift import TimeshiftHelper
-from helpers.shell import execute
 from mocks.cnb.server import CNBMock
 from helpers.logger import logger
 

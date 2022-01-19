@@ -92,8 +92,8 @@ services:
     image: jancajthaml/bbtest:${ARCH}
     tty: true
     environment:
-      IMAGE_VERSION: ${ARCH}-${VERSION}.${META}
-      UNIT_VERSION: ${VERSION}
+      VERSION: ${VERSION}
+      META: ${META}
     cap_add:
       - SYS_TIME
     volumes:
