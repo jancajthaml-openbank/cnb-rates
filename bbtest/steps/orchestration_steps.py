@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from behave import *
-from helpers.shell import execute
+import datetime
 import os
 from helpers.eventually import eventually
-import datetime
-from helpers.http import Request
+from openbank_testkit import Shell, Request
 
 
 @given('current time is "{value}"')
@@ -17,17 +16,17 @@ def timeshift(context, value):
   def wait_for_import_to_start():
     context.timeshift.set_date_time(context.new_epoch)
     context.new_epoch += datetime.timedelta(seconds=1)
-    (code, result, error) = execute(["systemctl", "restart", "cnb-rates-import.timer"])
+    (code, result, error) = Shell.run(["systemctl", "restart", "cnb-rates-import.timer"])
     assert code == 'OK', str(result) + ' ' + str(error)
-    (code, result, error) = execute(["systemctl", "show", "-p", "SubState", 'cnb-rates-import.service'])
+    (code, result, error) = Shell.run(["systemctl", "show", "-p", "SubState", 'cnb-rates-import.service'])
     assert code == 'OK', str(result) + ' ' + str(error)
     assert 'SubState=running' in result, str(result) + ' ' + str(error)
 
   @eventually(30)
   def wait_for_import_to_stop():
-    (code, result, error) = execute(["systemctl", "stop", "cnb-rates-import.service"])
+    (code, result, error) = Shell.run(["systemctl", "stop", "cnb-rates-import.service"])
     assert code == 'OK', str(result) + ' ' + str(error)
-    (code, result, error) = execute(["systemctl", "show", "-p", "SubState", 'cnb-rates-import.service'])
+    (code, result, error) = Shell.run(["systemctl", "show", "-p", "SubState", 'cnb-rates-import.service'])
     assert code == 'OK', str(result) + ' ' + str(error)
     assert 'SubState=dead' in result, str(result) + ' ' + str(error)
 
@@ -39,13 +38,13 @@ def timeshift(context, value):
 @given('package {package} is {operation}')
 def step_impl(context, package, operation):
   if operation == 'installed':
-    (code, result, error) = execute(["apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confold", context.unit.binary])
+    (code, result, error) = Shell.run(["apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confold", context.unit.binary])
     assert code == 'OK', "unable to install with code {} and {} {}".format(code, result, error)
     assert os.path.isfile('/etc/cnb-rates/conf.d/init.conf') is True
   elif operation == 'uninstalled':
-    (code, result, error) = execute(["apt-get", "-y", "remove", package])
+    (code, result, error) = Shell.run(["apt-get", "-y", "remove", package])
     assert code == 'OK', "unable to uninstall with code {} and {} {}".format(code, result, error)
-    (code, result, error) = execute(["apt-get", "-y", "purge", package])
+    (code, result, error) = Shell.run(["apt-get", "-y", "purge", package])
     assert code == 'OK', "unable to purge with code {} and {} {}".format(code, result, error)
     assert os.path.isfile('/etc/cnb-rates/conf.d/init.conf') is False
   else:
@@ -55,7 +54,7 @@ def step_impl(context, package, operation):
 @given('systemctl contains following active units')
 @then('systemctl contains following active units')
 def step_impl(context):
-  (code, result, error) = execute(["systemctl", "list-units", "--all", "--no-legend", "--state=active"])
+  (code, result, error) = Shell.run(["systemctl", "list-units", "--all", "--no-legend", "--state=active"])
   assert code == 'OK', str(result) + ' ' + str(error)
   items = []
   for row in context.table:
@@ -68,7 +67,7 @@ def step_impl(context):
 @given('systemctl does not contain following active units')
 @then('systemctl does not contain following active units')
 def step_impl(context):
-  (code, result, error) = execute(["systemctl", "list-units", "--all", "--no-legend", "--state=active"])
+  (code, result, error) = Shell.run(["systemctl", "list-units", "--all", "--no-legend", "--state=active"])
   assert code == 'OK', str(result) + ' ' + str(error)
   items = []
   for row in context.table:
@@ -83,7 +82,7 @@ def step_impl(context):
 def unit_running(context, unit):
   @eventually(10)
   def wait_for_unit_state_change():
-    (code, result, error) = execute(["systemctl", "show", "-p", "SubState", unit])
+    (code, result, error) = Shell.run(["systemctl", "show", "-p", "SubState", unit])
     assert code == 'OK', str(result) + ' ' + str(error)
     assert 'SubState=running' in result, result
 
@@ -105,7 +104,7 @@ def unit_running(context, unit):
 def unit_not_running(context, unit):
   @eventually(10)
   def wait_for_unit_state_change():
-    (code, result, error) = execute(["systemctl", "show", "-p", "SubState", unit])
+    (code, result, error) = Shell.run(["systemctl", "show", "-p", "SubState", unit])
     assert code == 'OK', str(result) + ' ' + str(error)
     assert 'SubState=dead' in result, result
 
@@ -115,7 +114,7 @@ def unit_not_running(context, unit):
 @given('{operation} unit "{unit}"')
 @when('{operation} unit "{unit}"')
 def operation_unit(context, operation, unit):
-  (code, result, error) = execute(["systemctl", operation, unit])
+  (code, result, error) = Shell.run(["systemctl", operation, unit])
   assert code == 'OK', str(result) + ' ' + str(error)
 
 
