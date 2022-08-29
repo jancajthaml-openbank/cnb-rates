@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/jancajthaml-openbank/local-fs v1.2.8
-	github.com/rs/zerolog v1.27.0
+	github.com/rs/zerolog v1.28.0
 )
 
 require (
