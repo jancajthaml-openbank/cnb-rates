@@ -1,6 +1,6 @@
 module github.com/jancajthaml-openbank/cnb-rates-rest
 
-go 1.17
+go 1.20
 
 require (
 	github.com/jancajthaml-openbank/local-fs v1.2.8
