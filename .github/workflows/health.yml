@@ -20,44 +20,50 @@ jobs:
     - name: Prepare
       uses: actions/setup-go@v2
       with:
-        go-version: 1.17
+        go-version: 1.20
       id: go
 
     - name: Checkout
       uses: actions/checkout@v2
 
     - name: Install static dependencies (import)
+      env:
+        GO111MODULE: on
+      working-directory: services/cnb-rates-import
       run: |
-        cd services/cnb-rates-import
-        GO111MODULE=on go mod verify
-        GO111MODULE=on go mod tidy
-        GO111MODULE=on go mod vendor
+        go mod verify
+        go mod tidy
+        go mod vendor
 
     - name: Install static dependencies (batch)
+      env:
+        GO111MODULE: on
+      working-directory: services/cnb-rates-batch
       run: |
-        cd services/cnb-rates-batch
-        GO111MODULE=on go mod verify
-        GO111MODULE=on go mod tidy
-        GO111MODULE=on go mod vendor
+        go mod verify
+        go mod tidy
+        go mod vendor
 
     - name: Install static dependencies (rest)
+      env:
+        GO111MODULE: on
+      working-directory: services/cnb-rates-rest
       run: |
-        cd services/cnb-rates-rest
-        GO111MODULE=on go mod verify
-        GO111MODULE=on go mod tidy
-        GO111MODULE=on go mod vendor
+        go mod verify
+        go mod tidy
+        go mod vendor
 
     - name: Unit Test (import)
+      working-directory: services/cnb-rates-import
       run:  |
-        cd services/cnb-rates-import
         go test -v ./... -timeout=10s
 
     - name: Unit Test (batch)
+      working-directory: services/cnb-rates-batch
       run:  |
-        cd services/cnb-rates-batch
         go test -v ./... -timeout=10s
 
     - name: Unit Test (rest)
+      working-directory: services/cnb-rates-rest
       run:  |
-        cd services/cnb-rates-rest
         go test -v ./... -timeout=10s
