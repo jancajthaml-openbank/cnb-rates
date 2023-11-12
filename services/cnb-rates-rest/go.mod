@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/jancajthaml-openbank/local-fs v1.2.8
-	github.com/labstack/echo/v4 v4.11.2
+	github.com/labstack/echo/v4 v4.11.3
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.31.0
 	github.com/stretchr/testify v1.8.4
